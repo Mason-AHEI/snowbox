@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snow Box - 云存档服务</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="js/auth.js"></script>
+  <script>
+    // 检查是否已登录
+    document.addEventListener('DOMContentLoaded', function() {
+      var currentUser = getCurrentUser();
+      if (currentUser) {
+        // 已登录，自动跳转到 dashboard
+        window.location.href = 'dashboard.html';
+      }
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <div class="logo">
+          <img src="logo.jpeg" alt="Snow Box Logo">
+          <span>Snow Box</span>
+        </div>
+        <div class="nav-buttons">
+          <a href="login.html" class="btn btn-secondary">登录</a>
+          <a href="register.html" class="btn btn-primary">注册</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-icon">
+          <i class="fas fa-snowflake"></i>
+        </div>
+        <h1>Snow Box 云存档</h1>
+        <p>专为雪花工作室游戏设计的云存档服务，轻松管理你的游戏存档和文件</p>
+        <div class="hero-buttons">
+          <a href="register.html" class="btn btn-primary btn-large">立即开始</a>
+          <a href="login.html" class="btn btn-secondary btn-large">登录账号</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="container">
+      <h2>核心功能</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <h3>云存储</h3>
+          <p>文件存储在云端，支持随时随地访问和下载</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-folder"></i>
+          <h3>文件管理</h3>
+          <p>支持文件分组管理，方便组织和查找你的存档</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-sync-alt"></i>
+          <h3>文件替换</h3>
+          <p>轻松替换已上传的文件，保留完整的历史记录</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-shield-alt"></i>
+          <h3>基础保护</h3>
+          <p>用户密码加密存储，提供基础的访问控制</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-gamepad"></i>
+          <h3>游戏存档支持</h3>
+          <p>支持雪花工作室旗下游戏的存档同步与管理</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about">
+    <div class="container">
+      <h2>关于 Snow Box</h2>
+      <p>Snow Box 是一个简单易用的云存档服务平台，专为游戏玩家和文件管理需求设计。我们致力于提供便捷的云存储解决方案。</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="studio-branding" style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px;">
+        <img src="snowwhite.png" alt="雪花工作室" style="width: 48px; height: 48px;">
+        <span style="font-weight: 600; color: #9ca3af; font-size: 18px;">雪花工作室</span>
+      </div>
+      <p>&copy; 2024 Snow Box. All rights reserved.</p>
+      <p><a href="terms.html">服务条款</a> | <a href="privacy.html">隐私政策</a></p>
+    </div>
+  </footer>
+</body>
+</html>

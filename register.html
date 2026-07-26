@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>注册 - Snow Box</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="studio-branding-top" style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 12px;">
+      <img src="snowwhite.png" alt="雪花工作室" style="width: 80px; height: 80px;">
+      <span style="font-weight: 600; color: white; font-size: 18px;">雪花工作室</span>
+    </div>
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="logo">
+          <img src="logo.jpeg" alt="Snow Box Logo">
+        </div>
+        <h1>Snow Box</h1>
+        <p>创建账号，开始您的旅程</p>
+      </div>
+
+      <form id="register-form" class="auth-form" autocomplete="on">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user"></i>
+            <input type="text" id="username" name="username" placeholder="请输入用户名" autocomplete="username">
+          </div>
+          <span class="error-message" id="username-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="email">邮箱</label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="email" name="email" placeholder="请输入邮箱地址" autocomplete="username email">
+          </div>
+          <span class="error-message" id="email-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="password">密码</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" name="password" placeholder="请输入密码（至少6位）" autocomplete="new-password">
+            <i class="fas fa-eye toggle-password" onclick="togglePassword('password')"></i>
+          </div>
+          <span class="error-message" id="password-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm-password">确认密码</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="confirm-password" name="confirm-password" placeholder="请再次输入密码" autocomplete="new-password">
+            <i class="fas fa-eye toggle-password" onclick="togglePassword('confirm-password')"></i>
+          </div>
+          <span class="error-message" id="confirm-password-error"></span>
+        </div>
+
+        <div class="form-group remember">
+          <label class="checkbox-label">
+            <input type="checkbox" id="agree-terms">
+            <span>我同意<a href="terms.html">服务条款</a>和<a href="privacy.html">隐私政策</a></span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">注册</button>
+
+        <div class="divider">
+          <span>或</span>
+        </div>
+
+        <a href="login.html" class="btn btn-secondary">已有账号？登录</a>
+      </form>
+
+      <div class="message message-success" id="register-success">
+        <i class="fas fa-check-circle"></i>
+        <span>注册成功！正在跳转到登录页面...</span>
+      </div>
+
+      <div class="message message-error" id="register-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="register-error-message">注册失败</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

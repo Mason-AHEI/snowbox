@@ -1,0 +1,415 @@
+================================================================================
+                          SNOW BOX - 项目说明文档
+================================================================================
+
+一、项目概述
+--------------------------------------------------------------------------------
+Snow Box 是一个基于 Cloudflare Workers + D1 数据库构建的云文件存储和游戏分发平台。
+核心功能包括：
+  1. 用户认证系统（注册/登录/权限管理）
+  2. 云文件存储（支持大文件分块存储，解决 D1 1MB/行限制）
+  3. 文件夹上传/下载（保留层级结构，前端 JSZip 打包）
+  4. 文件分组管理（支持多层级嵌套分组）
+  5. 游戏发布/下载/库管理
+
+二、技术架构
+--------------------------------------------------------------------------------
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           前端 (Frontend)                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐   │
+│  │ index.html  │  │login.html   │  │dashboard.html│  │create-game.html│  │
+│  │ (首页/介绍) │  │ (登录页面)  │  │ (主功能页)   │  │ (创建游戏)    │   │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └───────┬───────┘   │
+│         │                │                │                  │          │
+│         └────────────────┴────────────────┴──────────────────┘          │
+│                           js/auth.js                                   │
+│                     js/dashboard.js                                    │
+│                     CSS: styles.css, dashboard.css                      │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       Cloudflare Workers (Backend)                     │
+│                     src/index.js / worker.js                           │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  API 路由: /api/register, /api/login, /api/saves/*, /api/games/*│   │
+│  │            /api/library/*, /api/user/*, /api/storage/*           │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       Cloudflare D1 (Database)                         │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌───────────────┐  │
+│  │    users     │ │ save_groups  │ │    saves     │ │     games     │  │
+│  │    library   │ │ file_chunks  │ │              │ │               │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └───────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+三、文件结构说明
+--------------------------------------------------------------------------------
+├── Snow Box/
+│   ├── index.html           # 首页/介绍页面（未登录时显示）
+│   ├── login.html           # 登录/注册页面
+│   ├── dashboard.html       # 主功能页面（登录后显示）
+│   ├── create-game.html     # 创建游戏页面
+│   ├── game-detail.html     # 游戏详情页面
+│   ├── storage-settings.html# 存储设置页面（超级管理员专用）
+│   ├── js/
+│   │   ├── auth.js          # 用户认证模块（登录/注册/状态管理）
+│   │   └── dashboard.js     # 主功能页面逻辑（文件管理/游戏管理等）
+│   ├── css/
+│   │   ├── styles.css       # 基础样式（登录页/首页）
+│   │   └── dashboard.css    # 主功能页样式
+│   ├── src/
+│   │   └── index.js         # Cloudflare Worker 入口（wrangler 部署）
+│   ├── worker.js            # Cloudflare Worker 入口（手动粘贴部署）
+│   ├── wrangler.toml        # Cloudflare Workers 部署配置
+│   ├── database_schema.sql  # D1 数据库表结构
+│   └── PROJECT_INFO.txt     # 项目说明文档（本文件）
+
+四、核心文件详细说明
+--------------------------------------------------------------------------------
+
+4.1 js/auth.js - 用户认证模块
+    作用: 处理用户登录、注册、状态管理
+    关键函数:
+      - getCurrentUser(): 从 localStorage 获取当前登录用户
+      - setCurrentUser(user): 保存用户信息到 localStorage
+      - clearCurrentUser(): 清除用户信息（登出）
+      - login(): 用户登录，发送请求到 /api/login
+      - register(): 用户注册，发送请求到 /api/register
+      - logout(): 用户登出，清除信息并跳转登录页
+    配置:
+      - API_BASE_URL: 'https://snow-box-api.18218289677.workers.dev'
+      - CURRENT_USER_KEY: 'current_user' (localStorage 键名)
+
+4.2 js/dashboard.js - 主功能页面逻辑
+    作用: 文件管理、游戏管理、用户管理等所有前端交互逻辑
+    依赖: js/auth.js, JSZip (CDN), FontAwesome (CDN)
+    核心功能:
+      - 文件上传/下载/替换/删除
+      - 文件夹上传/下载（JSZip 打包）
+      - 分组管理（创建/编辑/删除/嵌套）
+      - 游戏列表/搜索/入库
+      - 用户管理（管理员功能）
+      - 神秘代码升级权限
+    全局变量:
+      - currentGroupId: 当前选中的分组ID
+      - userGroups: 用户所有分组列表
+      - editingGroupId: 正在编辑的分组ID
+      - selectedColor: 分组选中颜色
+      - expandedGroups: 分组折叠状态
+
+4.3 src/index.js / worker.js - Cloudflare Worker 后端
+    作用: 处理所有 API 请求，数据库操作，文件分块存储
+    配置常量:
+      - CHUNK_SIZE: 512 * 1024 (512KB，避开 D1 1MB/行限制)
+    核心函数:
+      - handleRequest(request, env, ctx): 主入口函数，路由分发
+      - queryDB(env, sql, params): 执行 SELECT 查询
+      - execDB(env, sql, params): 执行 INSERT/UPDATE/DELETE
+      - writeFileInChunks(env, fileId, fileType, fileData): 分块写入文件
+      - readFileFromChunks(env, fileId, fileType): 分块读取文件
+      - deleteFileChunks(env, fileId, fileType): 删除文件分块
+
+4.4 database_schema.sql - 数据库表结构
+    作用: 定义 D1 数据库的所有表和索引
+    包含表: users, save_groups, saves, games, library, file_chunks
+
+4.5 wrangler.toml - 部署配置
+    作用: Cloudflare Workers 部署配置文件
+    关键配置:
+      - name: "snow-box-api"
+      - main: "src/index.js"
+      - compatibility_date: "2024-01-01"
+      - D1 数据库绑定: binding = "DB", database_name = "snow-box-db"
+
+五、API 路由清单
+--------------------------------------------------------------------------------
+
+5.1 用户认证 API
+    POST   /api/register          - 用户注册
+    POST   /api/login             - 用户登录
+    GET    /api/users             - 获取所有用户列表（管理员）
+    GET    /api/user/:id          - 获取单个用户信息
+    PUT    /api/user/:id          - 更新用户信息（含神秘代码升级）
+    DELETE /api/user/:id          - 删除用户（级联删除）
+
+5.2 文件存档 API
+    POST   /api/saves/upload      - 上传单个文件
+    POST   /api/saves/upload-folder - 文件夹批量上传
+    GET    /api/saves/user/:userId - 获取用户所有文件
+    GET    /api/saves/group/:groupId - 获取分组内文件（含子分组）
+    GET    /api/saves/group-files/:groupId - 获取分组文件元数据（打包用）
+    GET    /api/saves/download/:id - 下载文件
+    PUT    /api/saves/replace/:id - 替换文件
+    DELETE /api/saves/delete/:id  - 删除文件
+    PUT    /api/saves/:id/group   - 移动文件到分组
+
+5.3 分组 API
+    GET    /api/saves/groups/user/:userId - 获取用户所有分组
+    POST   /api/saves/groups      - 创建分组（支持嵌套）
+    PUT    /api/saves/groups/:id  - 更新分组
+    DELETE /api/saves/groups/:id  - 删除分组
+
+5.4 游戏 API
+    GET    /api/games             - 获取游戏列表（支持搜索）
+    POST   /api/games             - 创建游戏
+    GET    /api/games/:id         - 获取游戏详情
+    DELETE /api/games/:id         - 删除游戏
+    GET    /api/games/download/:id - 下载游戏文件
+    GET    /api/games/image/:id   - 获取游戏封面
+    GET    /api/games/video/:id   - 获取游戏视频
+
+5.5 库 API
+    GET    /api/library/user/:userId - 获取用户游戏库
+    POST   /api/library/add       - 添加游戏到库
+    POST   /api/library/remove    - 从库中移除游戏
+
+5.6 存储管理 API（超级管理员专用）
+    GET    /api/storage/config    - 获取存储配置
+    DELETE /api/storage/reset     - 清空所有数据
+
+六、数据库表结构
+--------------------------------------------------------------------------------
+
+6.1 users（用户表）
+    id: TEXT PRIMARY KEY      - 用户唯一标识（UUID）
+    username: TEXT NOT NULL   - 用户名
+    email: TEXT NOT NULL UNIQUE - 邮箱（登录用）
+    password: TEXT NOT NULL   - 密码（SHA-256 哈希）
+    role: TEXT DEFAULT 'user' - 角色: user/developer/admin/superadmin
+    created_at: TEXT NOT NULL - 创建时间
+    last_login: TEXT          - 最后登录时间
+
+6.2 save_groups（文件分组表）
+    id: TEXT PRIMARY KEY      - 分组唯一标识
+    user_id: TEXT NOT NULL    - 所属用户ID
+    parent_id: TEXT           - 父分组ID（null=顶级分组）
+    name: TEXT NOT NULL       - 分组名称
+    color: TEXT DEFAULT '#3B82F6' - 分组颜色
+    created_at: TEXT NOT NULL - 创建时间
+
+6.3 saves（文件存档表）
+    id: TEXT PRIMARY KEY      - 文件唯一标识
+    user_id: TEXT NOT NULL    - 所属用户ID
+    group_id: TEXT            - 所属分组ID
+    name: TEXT NOT NULL       - 文件显示名称
+    file_name: TEXT NOT NULL  - 原始文件名
+    file_path: TEXT           - 相对路径（文件夹上传时保留）
+    file_data: BLOB           - 文件数据（小文件）
+    file_size: INTEGER NOT NULL - 文件大小
+    created_at: TEXT NOT NULL - 创建时间
+
+6.4 games（游戏表）
+    id: TEXT PRIMARY KEY      - 游戏唯一标识
+    name: TEXT NOT NULL       - 游戏名称
+    url: TEXT                 - 外部链接（URL模式）
+    file_name: TEXT           - 文件名（文件模式）
+    file_data: BLOB           - 游戏文件数据
+    file_size: INTEGER        - 文件大小
+    image_data: BLOB          - 封面图片数据
+    video_data: BLOB          - 宣传视频数据
+    description: TEXT         - 游戏描述
+    author_id: TEXT NOT NULL  - 作者ID
+    author_name: TEXT NOT NULL - 作者名（冗余存储）
+    created_at: TEXT NOT NULL - 创建时间
+
+6.5 library（游戏库表）
+    id: TEXT PRIMARY KEY      - 记录唯一标识
+    user_id: TEXT NOT NULL    - 用户ID
+    game_id: TEXT NOT NULL    - 游戏ID
+    added_at: TEXT NOT NULL   - 添加时间
+    UNIQUE(user_id, game_id)  - 同一游戏不能重复添加
+
+6.6 file_chunks（文件分块表）
+    id: TEXT PRIMARY KEY      - 块唯一标识
+    file_id: TEXT NOT NULL    - 关联的 saves.id 或 games.id
+    file_type: TEXT NOT NULL  - 文件类型: save_file/game_file/game_image/game_video
+    chunk_index: INTEGER NOT NULL - 块序号（从0开始）
+    chunk_data: BLOB NOT NULL - 块数据（约512KB）
+    chunk_size: INTEGER NOT NULL - 块实际大小
+    created_at: TEXT NOT NULL - 创建时间
+
+七、配置信息
+--------------------------------------------------------------------------------
+
+7.1 API 基础 URL
+    位置: js/auth.js 和 js/dashboard.js 的 API_BASE_URL 常量
+    当前值: 'https://snow-box-api.18218289677.workers.dev'
+    本地开发: 可设为空字符串或 '/api'
+
+7.2 文件分块大小
+    位置: src/index.js 和 worker.js 的 CHUNK_SIZE 常量
+    当前值: 512 * 1024 (512KB)
+    说明: 避开 D1 数据库 1MB/行的存储限制
+
+7.3 localStorage 键名
+    位置: js/auth.js 的 CURRENT_USER_KEY 常量
+    当前值: 'current_user'
+    说明: 存储当前登录用户信息
+
+7.4 D1 数据库绑定
+    位置: wrangler.toml 的 [[d1_databases]] 配置
+    binding: "DB"
+    database_name: "snow-box-db"
+    database_id: "YOUR_DATABASE_ID_HERE"（需替换为实际ID）
+
+八、神秘代码机制
+--------------------------------------------------------------------------------
+
+功能: 普通用户可通过神秘代码升级为超级管理员
+触发方式: 在个人资料页面修改用户名时输入包含 "&&*SA*&&" 的字符串
+规则:
+  - 如果用户名仅包含神秘代码（如 "&&*SA*&&"）：只升级角色，不修改用户名
+  - 如果用户名包含神秘代码和其他字符（如 "admin&&*SA*&&"）：升级角色并修改用户名
+  - 升级后角色变为 'superadmin'，可访问存储设置和用户管理功能
+
+九、权限说明
+--------------------------------------------------------------------------------
+
+角色层级（从低到高）:
+  1. user（普通用户）: 文件上传/下载/分组管理/游戏库
+  2. developer（开发者）: 发布游戏/删除自己发布的游戏
+  3. admin（管理员）: 管理用户权限/删除所有游戏
+  4. superadmin（超级管理员）: 清空数据库/访问存储设置
+
+特殊权限:
+  - 只有超级管理员可以访问 storage-settings.html
+  - 开发者只能删除自己发布的游戏
+  - 神秘代码机制仅对普通用户有效
+
+十、文件存储策略
+--------------------------------------------------------------------------------
+
+10.1 小文件（< 512KB）:
+    直接存储在 saves.file_data 或 games.file_data/image_data/video_data
+
+10.2 大文件（>= 512KB）:
+    拆分为多个 512KB 块存储在 file_chunks 表
+    通过 file_id + file_type 关联到原始记录
+
+10.3 文件夹上传:
+    使用 webkitRelativePath 获取相对路径
+    每个文件独立存储，保留路径信息
+
+10.4 文件夹下载:
+    前端使用 JSZip 库打包
+    根据 file_path 重建文件夹结构
+
+十一、部署流程
+--------------------------------------------------------------------------------
+
+1. 创建 Cloudflare 账户
+2. 创建 D1 数据库（名称: snow-box-db）
+3. 在 D1 控制台执行 database_schema.sql 创建表
+4. 创建 Worker 服务（名称: snow-box-api）
+5. 绑定 D1 数据库到 Worker（变量名: DB）
+6. 部署方式:
+   a. wrangler 部署: 使用 wrangler.toml，运行 `wrangler deploy`
+   b. 手动部署: 将 worker.js 内容粘贴到 Worker 编辑器
+7. 更新前端 API_BASE_URL 为 Worker 访问地址
+8. 将前端文件部署到 Cloudflare Pages
+
+十二、调试信息
+--------------------------------------------------------------------------------
+
+12.1 浏览器控制台:
+    - 登录状态: 使用 getCurrentUser() 查看
+    - API 请求: 网络面板查看请求/响应
+    - 错误日志: console.error 输出详细错误信息
+
+12.2 Worker 日志:
+    - 在 Cloudflare Dashboard 的 Worker 控制台查看
+    - 错误会通过 console.error('Error:', error) 输出
+
+12.3 常见问题:
+    - 登录失败: 检查 API_BASE_URL 是否正确
+    - 文件上传失败: 检查文件大小是否超过 D1 限制
+    - 删除分组报错: 检查子分组和关联文件处理逻辑
+
+十三、注意事项
+--------------------------------------------------------------------------------
+
+1. D1 数据库免费额度有限，大文件存储会消耗较多资源
+2. 文件分块存储会增加数据库查询次数，建议控制单文件大小
+3. 前端使用 localStorage 存储用户信息，未使用 JWT token
+4. 所有密码使用 SHA-256 哈希加密存储
+5. CORS 配置允许所有来源，生产环境应限制为特定域名
+
+十四、替代存储方案（强烈推荐）：R2 + KV
+--------------------------------------------------------------------------------
+
+14.1 为什么放弃 D1 改用 R2 + KV
+
+  - D1 免费额度仅 500MB 存储空间，不适合存文件二进制
+  - D1 每一行限制 1MB，大文件必须分块，代码复杂
+  - D1 是关系数据库，存 BLOB 性能不佳
+  - R2 是对象存储，免费 10GB 存储空间，单文件最大 5TB
+  - KV 是键值存储，存 JSON 元数据非常合适，存储无额度限制
+  - 综合：免费额度是 D1 的 20 倍以上，且代码更简洁
+
+14.2 Cloudflare 平台上所有存储方案对比
+
+  | 方案            | 类型       | 免费额度                     | 单文件上限       | 适用场景                     |
+  |-----------------|------------|------------------------------|-----------------|------------------------------|
+  | D1              | 关系数据库 | 500MB 存储，100万读/天，10万写/天 | 1MB/行          | 结构化数据、小记录          |
+  | Workers KV      | 键值存储   | 100,000 读/天，1,000 写/天，存储无限 | 25MB/键         | 配置、元数据、缓存          |
+  | R2              | 对象存储   | 10GB 存储，100万操作/月，10GB出口 | 5TB            | 大文件、图片、视频、存档    |
+  | Durable Objects | 分布式对象 | 10GB 存储/月，100GB 出口/月  | 128MB/对象      | 实时协作、游戏状态（价格贵）|
+  | Vectorize       | 向量数据库 | 10 亿向量维度                | -               | AI 语义搜索                 |
+  | Hyperdrive      | 外部加速   | 免费无限查询                 | -               | 加速 PostgreSQL/MySQL（需外部数据库）|
+
+14.3 R2 + KV 版本的文件清单
+
+  - src/index-r2.js      → R2+KV 版本 Worker 代码（wrangler deploy 部署）
+  - worker-r2.js         → R2+KV 版本 Worker 代码（Dashboard 手动粘贴）
+  - wrangler-r2-kv.toml  → R2+KV 版本 wrangler 配置
+
+14.4 R2 + KV 存储键命名规则
+
+  KV (变量名 META) - 全部存 JSON：
+    user:{email}                     → { id, username, email, password, role, created_at, last_login }
+    saves:user:{userId}              → [ { id, group_id, name, file_name, file_size, created_at }, ... ]
+    saves:group:{groupId}            → [saveId1, saveId2, ...]
+    groups:user:{userId}             → [ { id, parent_id, name, color, created_at }, ... ]
+    games:list                       → [ { id, name, url, file_name, has_image, has_video, ... }, ... ]
+    library:user:{userId}            → [ { gameId, added_at }, ... ]
+
+  R2 (变量名 FILES) - 存二进制文件：
+    saves/{saveId}                   → 存档文件二进制
+    games/file/{gameId}              → 游戏文件二进制
+    games/image/{gameId}             → 游戏封面图
+    games/video/{gameId}             → 游戏宣传视频
+
+14.5 R2 + KV 版本的部署步骤
+
+  1. 登录 Cloudflare Dashboard → R2 → 创建 Bucket，名称：snow-box-files
+  2. Cloudflare Dashboard → Workers & Pages → KV → 创建 Namespace，复制 ID
+  3. 创建 Worker（名称：snow-box-api）
+  4. Worker 设置 → 绑定 → 绑定 R2 Bucket（变量名：FILES）
+  5. Worker 设置 → 绑定 → 绑定 KV Namespace（变量名：META）
+  6. 编辑 Worker → 将 worker-r2.js 内容粘贴进去，部署
+  7. 前端 API_BASE_URL 设为 Worker 的访问地址
+  8. （可选）用 wrangler CLI 部署：配置 wrangler-r2-kv.toml 后运行 wrangler deploy
+
+14.6 R2 + KV 版本的优势总结
+
+  - 无需分块存储逻辑，代码更简洁
+  - 免费存储空间 10GB（D1 仅 500MB）
+  - 无需写 SQL，JSON 操作更直观
+  - 部署更简单：无需建表步骤（D1 需要先执行 SQL）
+  - 文件直接通过 R2 流式读取，无需拼装，性能更好
+
+十五、联系方式
+--------------------------------------------------------------------------------
+
+项目作者: Snow Box Team
+部署地址: https://snow-box-api.18218289677.workers.dev
+前端地址: 需要部署到 Cloudflare Pages
+
+================================================================================
+                              文档版本: 2.0 (新增 R2+KV 方案)
+                              最后更新: 2024年
+================================================================================

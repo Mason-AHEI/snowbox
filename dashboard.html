@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snow Box - 用户中心</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <img src="logo.jpeg" alt="Snow Box Logo">
+        </div>
+        <div class="user-greeting">
+          <p>你好</p>
+          <span id="user-role" class="role-badge">用户</span>
+          <p id="user-name" class="username">Demo User</p>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" id="btn-games">
+          <i class="fas fa-gamepad"></i>
+          <span>游戏</span>
+        </button>
+        <button class="nav-btn" id="btn-saves">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>云文件</span>
+        </button>
+        <button class="nav-btn" id="btn-announcements">
+          <i class="fas fa-bullhorn"></i>
+          <span>公告</span>
+        </button>
+        <button class="nav-btn" id="btn-profile">
+          <i class="fas fa-user"></i>
+          <span>我的</span>
+        </button>
+        <button class="nav-btn" id="btn-about">
+          <i class="fas fa-box"></i>
+          <span>Snow Box</span>
+        </button>
+        <button class="nav-btn" id="btn-storage" style="display: none;">
+          <i class="fas fa-cloud"></i>
+          <span>存储设置</span>
+        </button>
+        <button class="nav-btn admin-only" id="btn-admin" style="display: none;">
+          <i class="fas fa-shield"></i>
+          <span>管理后台</span>
+        </button>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button class="logout-btn" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>退出登录</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-content" id="page-games">
+      <header class="page-header">
+        <h1>游戏</h1>
+        <p>发现和管理您喜欢的游戏</p>
+      </header>
+
+      <div class="search-container">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="search-input" placeholder="搜索游戏...">
+        </div>
+      </div>
+
+      <div class="game-actions" id="game-actions" style="display: none;">
+        <button class="btn btn-primary new-game-btn" id="new-game-btn">
+          <i class="fas fa-plus"></i>
+          <span>上传新游戏</span>
+        </button>
+        <button class="btn btn-danger delete-game-btn" id="delete-game-btn" style="display: none;">
+          <i class="fas fa-trash"></i>
+          <span>删除游戏</span>
+        </button>
+      </div>
+
+      <div class="modal-overlay" id="delete-game-modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>删除游戏</h2>
+            <button class="modal-close" id="delete-game-modal-close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>请选择要删除的游戏：</p>
+            <div class="game-checkboxes" id="game-checkboxes">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" id="delete-game-cancel-btn">取消</button>
+            <button class="btn btn-danger" id="confirm-delete-game-btn">确认删除</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 发布公告弹窗 -->
+      <div class="modal-overlay" id="announcement-modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>发布公告</h2>
+            <button class="modal-close" id="announcement-modal-close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="announcement-title">公告标题</label>
+              <input type="text" id="announcement-title" placeholder="请输入公告标题">
+            </div>
+            <div class="form-group">
+              <label for="announcement-content">公告内容</label>
+              <textarea id="announcement-content" rows="5" placeholder="请输入公告内容"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" id="announcement-cancel-btn">取消</button>
+            <button class="btn btn-primary" id="announcement-save-btn">发布公告</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="games-list" id="games-list">
+        <h3>游戏列表</h3>
+        <div class="games-grid" id="games-container">
+          <div class="empty-state">
+            <i class="fas fa-gamepad"></i>
+            <p>暂无游戏，请添加游戏</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- 公告页面 -->
+      <div class="page-content" id="page-announcements" style="display: none;">
+        <header class="page-header">
+          <h1><i class="fas fa-bullhorn"></i> 公告</h1>
+          <p>查看系统公告</p>
+        </header>
+
+        <div class="page-actions">
+          <button class="btn btn-primary" id="add-announcement-btn" style="display: none;">
+            <i class="fas fa-plus"></i>
+            <span>发布公告</span>
+          </button>
+        </div>
+
+        <div class="announcements-list" id="announcements-list">
+          <div class="empty-state">
+            <i class="fas fa-newspaper"></i>
+            <p>暂无公告</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content" id="page-saves" style="display: none;">
+        <header class="page-header">
+          <h1>云文件</h1>
+          <p>管理您的云存储文件</p>
+        </header>
+
+        <div class="save-actions">
+          <button class="btn btn-primary new-save-btn" id="new-save-btn">
+            <i class="fas fa-plus"></i>
+            <span>上传文件</span>
+          </button>
+          <button class="btn btn-primary upload-folder-btn" id="upload-folder-btn" style="background-color: #16a34a;">
+            <i class="fas fa-folder-open"></i>
+            <span>上传文件夹</span>
+          </button>
+          <button class="btn btn-secondary download-folder-btn" id="download-folder-btn" style="display: none;">
+            <i class="fas fa-download"></i>
+            <span>下载分组</span>
+          </button>
+          <button class="btn btn-secondary new-group-btn" id="new-group-btn">
+            <i class="fas fa-folder-plus"></i>
+            <span>新建分组</span>
+          </button>
+          <button class="btn btn-danger delete-save-btn" id="delete-save-btn">
+            <i class="fas fa-trash"></i>
+            <span>删除文件</span>
+          </button>
+        </div>
+
+        <div class="groups-container" id="groups-container">
+          <div class="groups-sidebar">
+            <div class="group-item active" data-group-id="all">
+              <i class="fas fa-folder-open"></i>
+              <span>全部文件</span>
+              <span class="group-count">0</span>
+            </div>
+            <div class="group-item" data-group-id="none">
+              <i class="fas fa-folder"></i>
+              <span>未分组</span>
+              <span class="group-count">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-overlay" id="save-modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>上传文件</h2>
+              <button class="modal-close" id="modal-close">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="save-name">文件名称</label>
+                <input type="text" id="save-name" placeholder="请输入文件名称">
+                <span class="error-message" id="save-name-error"></span>
+              </div>
+              <div class="form-group">
+                <label for="save-group">选择分组</label>
+                <select id="save-group">
+                  <option value="">不分组</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="save-file">选择文件</label>
+                <div class="file-upload">
+                  <input type="file" id="save-file" accept="*">
+                  <label for="save-file" class="file-label">
+                    <i class="fas fa-upload"></i>
+                    <span>点击选择文件</span>
+                  </label>
+                  <span class="file-name" id="file-name">未选择文件</span>
+                </div>
+                <span class="error-message" id="save-file-error"></span>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="cancel-btn">取消</button>
+              <button class="btn btn-primary" id="create-save-btn">上传文件</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-overlay" id="folder-upload-modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>上传文件夹</h2>
+              <button class="modal-close" id="folder-upload-modal-close">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="folder-upload-group">选择分组</label>
+                <select id="folder-upload-group">
+                  <option value="">不分组</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="folder-upload-input">选择文件夹</label>
+                <div class="file-upload">
+                  <input type="file" id="folder-upload-input" webkitdirectory directory multiple>
+                  <label for="folder-upload-input" class="file-label">
+                    <i class="fas fa-folder-open"></i>
+                    <span>点击选择文件夹</span>
+                  </label>
+                  <span class="file-name" id="folder-upload-file-info">未选择文件夹</span>
+                </div>
+              </div>
+              <div class="form-group" id="folder-upload-progress-container" style="margin-top: 10px;">
+                <div id="folder-upload-progress-text" style="font-size: 12px; color: #666; margin-bottom: 5px;"></div>
+                <div style="background-color: #e5e7eb; border-radius: 4px; overflow: hidden; height: 8px;">
+                  <div id="folder-upload-progress-bar" style="background-color: #16a34a; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="folder-upload-cancel-btn">取消</button>
+              <button class="btn btn-primary" id="folder-upload-start-btn" style="background-color: #16a34a;">开始上传</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-overlay" id="replace-modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>替换文件</h2>
+              <button class="modal-close" id="replace-modal-close">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p>正在替换文件：<span id="replace-file-name"></span></p>
+              <div class="form-group">
+                <label for="replace-file">选择新文件</label>
+                <div class="file-upload">
+                  <input type="file" id="replace-file" accept="*">
+                  <label for="replace-file" class="file-label">
+                    <i class="fas fa-upload"></i>
+                    <span>点击选择文件</span>
+                  </label>
+                  <span class="file-name" id="replace-file-label">未选择文件</span>
+                </div>
+                <span class="error-message" id="replace-file-error"></span>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="replace-cancel-btn">取消</button>
+              <button class="btn btn-primary" id="replace-btn">替换文件</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-overlay" id="group-modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 id="group-modal-title">新建分组</h2>
+              <button class="modal-close" id="group-modal-close">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="group-id">
+              <div class="form-group">
+                <label for="group-name">分组名称</label>
+                <input type="text" id="group-name" placeholder="请输入分组名称">
+                <span class="error-message" id="group-name-error"></span>
+              </div>
+              <div class="form-group">
+                <label for="group-parent">父分组（可选）</label>
+                <select id="group-parent">
+                  <option value="">无（顶级分组）</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>分组颜色</label>
+                <div class="color-picker">
+                  <div class="color-option" data-color="#3B82F6" style="background: #3B82F6;"></div>
+                  <div class="color-option" data-color="#10B981" style="background: #10B981;"></div>
+                  <div class="color-option" data-color="#F59E0B" style="background: #F59E0B;"></div>
+                  <div class="color-option" data-color="#EF4444" style="background: #EF4444;"></div>
+                  <div class="color-option" data-color="#8B5CF6" style="background: #8B5CF6;"></div>
+                  <div class="color-option" data-color="#EC4899" style="background: #EC4899;"></div>
+                  <div class="color-option" data-color="#14B8A6" style="background: #14B8A6;"></div>
+                  <div class="color-option" data-color="#F97316" style="background: #F97316;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="group-cancel-btn">取消</button>
+              <button class="btn btn-danger delete-group-btn" id="delete-group-btn" style="display: none;">删除分组</button>
+              <button class="btn btn-primary" id="create-group-btn">创建分组</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-overlay" id="delete-modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>删除文件</h2>
+              <button class="modal-close" id="delete-modal-close">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p>请选择要删除的文件：</p>
+              <div class="save-checkboxes" id="save-checkboxes">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="delete-cancel-btn">取消</button>
+              <button class="btn btn-danger" id="confirm-delete-btn">确认删除</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="saves-list" id="saves-list">
+          <h3 id="saves-list-title">我的文件</h3>
+          <div class="saves-container" id="saves-container">
+            <div class="empty-state">
+              <i class="fas fa-folder-open"></i>
+              <p>暂无文件，请点击上方按钮上传</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content" id="page-profile" style="display: none;">
+        <header class="page-header">
+          <h1>我的</h1>
+          <p>管理您的个人资料</p>
+        </header>
+        <div class="profile-content">
+            <div class="profile-card">
+                <h3>修改用户名</h3>
+                <div class="form-group">
+                    <label for="new-username">新用户名</label>
+                    <input type="text" id="new-username" placeholder="请输入新用户名">
+                    <span class="error-message" id="username-edit-error"></span>
+                </div>
+                <button class="btn btn-primary" id="update-username-btn" onclick="window.updateUsername();">保存更改</button>
+                <p class="success-message" id="username-success" style="display: none;">用户名修改成功！</p>
+            </div>
+            
+            <div class="profile-card">
+                <h3>修改密码</h3>
+                <div class="form-group">
+                    <label for="current-password">当前密码</label>
+                    <input type="password" id="current-password" placeholder="请输入当前密码">
+                    <span class="error-message" id="password-current-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">新密码</label>
+                    <input type="password" id="new-password" placeholder="请输入新密码（至少6位）">
+                    <span class="error-message" id="password-new-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">确认新密码</label>
+                    <input type="password" id="confirm-password" placeholder="请再次输入新密码">
+                    <span class="error-message" id="password-confirm-error"></span>
+                </div>
+                <button class="btn btn-primary" id="update-password-btn">保存更改</button>
+                <p class="success-message" id="password-success" style="display: none;">密码修改成功！</p>
+            </div>
+        </div>
+      </div>
+
+      <div class="page-content" id="page-about" style="display: none;">
+        <header class="page-header">
+          <h1>Snow Box</h1>
+          <p>关于 Snow Box 云存储服务</p>
+        </header>
+        <div class="about-content">
+          <div class="developer-promo" id="developer-promo" style="display: none;">
+            <div class="promo-icon">
+              <i class="fas fa-code"></i>
+            </div>
+            <p>想要解锁更多功能？申请成为开发者</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content" id="page-admin" style="display: none;">
+        <header class="page-header">
+          <h1>管理后台</h1>
+          <p>管理系统用户和权限</p>
+        </header>
+        <div class="admin-content">
+          <div class="admin-section">
+            <h3>游戏管理</h3>
+            <div class="admin-card">
+              <button class="btn btn-primary" id="download-all-games-btn" style="background: linear-gradient(135deg, #10B981, #059669);">
+                <i class="fas fa-download"></i>
+                <span>下载所有游戏</span>
+              </button>
+              <p style="margin-top: 10px; color: #6B7280; font-size: 14px;">
+                <i class="fas fa-info-circle"></i> 将所有游戏打包下载为ZIP文件，包含游戏文件、封面、简介和视频
+              </p>
+            </div>
+          </div>
+          <div class="admin-section">
+            <h3>用户管理</h3>
+            <div class="admin-card">
+              <button class="btn btn-primary" id="refresh-users-btn">
+                <i class="fas fa-refresh"></i>
+                <span>刷新用户列表</span>
+              </button>
+              <div class="users-list-container" id="users-list-container">
+                <div class="users-list" id="users-list">
+                  <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <p>加载用户列表中...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-overlay" id="role-modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>设置用户权限</h2>
+              <button class="modal-close" id="role-modal-close">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="user-info">
+                <p><strong>用户名:</strong> <span id="modal-username"></span></p>
+                <p><strong>邮箱:</strong> <span id="modal-email"></span></p>
+              </div>
+              <div class="form-group">
+                <label for="role-select">选择权限级别</label>
+                <select id="role-select">
+                  <option value="user">用户</option>
+                  <option value="developer">开发者</option>
+                  <option value="admin">管理员</option>
+                  <option value="superadmin">主管理员</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="role-cancel-btn">取消</button>
+              <button class="btn btn-primary" id="role-save-btn">保存设置</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

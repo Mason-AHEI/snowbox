@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上传游戏 - Snow Box</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .auth-container {
+      max-width: 600px;
+    }
+    .upload-type-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .upload-type-btn {
+      flex: 1;
+      padding: 15px;
+      border: 2px solid var(--border-color);
+      background: white;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+    .upload-type-btn.active {
+      border-color: var(--primary-color);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .upload-type-btn i {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: var(--primary-color);
+      display: block;
+    }
+    .file-upload-area {
+      border: 2px dashed var(--border-color);
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .file-upload-area:hover {
+      border-color: var(--primary-color);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .file-upload-area i {
+      font-size: 48px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .file-upload-area input {
+      display: none;
+    }
+    .file-preview {
+      margin-top: 10px;
+      padding: 10px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      display: none;
+    }
+    .cover-preview {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 16px;
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .btn-back {
+      margin-bottom: 15px;
+      background: transparent;
+      color: var(--text-secondary);
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .btn-back:hover {
+      color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <button class="btn-back" id="btn-back">
+      <i class="fas fa-arrow-left"></i>
+      返回首页
+    </button>
+    
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="logo">
+          <img src="logo.jpeg" alt="Snow Box Logo">
+        </div>
+        <h1>上传新游戏</h1>
+        <p>分享你的游戏作品</p>
+      </div>
+
+      <form id="create-game-form" class="auth-form" autocomplete="off">
+        <div class="form-group">
+          <label>游戏名称</label>
+          <div class="input-wrapper">
+            <i class="fas fa-gamepad"></i>
+            <input type="text" id="game-name" placeholder="请输入游戏名称" autocomplete="off">
+          </div>
+          <span class="error-message" id="name-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label>封面图片</label>
+          <div class="file-upload-area" id="cover-upload">
+            <i class="fas fa-image"></i>
+            <p>点击上传游戏封面</p>
+            <input type="file" id="cover-image" accept="image/*">
+          </div>
+          <img id="cover-preview" class="cover-preview">
+          <span class="error-message" id="cover-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label>宣传视频（可选）</label>
+          <div class="file-upload-area" id="video-upload">
+            <i class="fas fa-video"></i>
+            <p>点击上传宣传视频</p>
+            <input type="file" id="promo-video" accept="video/*">
+          </div>
+          <div class="file-preview" id="video-preview">
+            <i class="fas fa-video"></i>
+            <span id="video-name-display"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>游戏简介</label>
+          <textarea id="game-description" placeholder="请输入游戏简介"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>上传方式</label>
+          <div class="upload-type-selector">
+            <div class="upload-type-btn active" data-type="url">
+              <i class="fas fa-link"></i>
+              URL地址
+            </div>
+            <div class="upload-type-btn" data-type="file">
+              <i class="fas fa-file-archive"></i>
+              文件上传
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" id="url-group">
+          <label>游戏URL</label>
+          <div class="input-wrapper">
+            <i class="fas fa-globe"></i>
+            <input type="url" id="game-url" placeholder="请输入游戏地址">
+          </div>
+          <span class="error-message" id="url-error"></span>
+        </div>
+
+        <div class="form-group" id="file-group" style="display: none;">
+          <label>游戏文件</label>
+          <div class="file-upload-area" id="file-upload">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>点击上传游戏文件</p>
+            <input type="file" id="game-file">
+          </div>
+          <div class="file-preview" id="file-preview">
+            <i class="fas fa-file"></i>
+            <span id="file-name-display"></span>
+          </div>
+          <span class="error-message" id="file-error"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-upload"></i>
+          上传游戏
+        </button>
+      </form>
+
+      <div class="message message-error" id="upload-error" style="display: none;">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="error-text"></span>
+      </div>
+
+      <div class="message message-success" id="upload-success" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <span>游戏上传成功！正在跳转...</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      let uploadType = 'url';
+      let selectedCover = null;
+      let selectedFile = null;
+      let selectedVideo = null;
+      let isSubmitting = false;
+
+      const typeBtns = document.querySelectorAll('.upload-type-btn');
+      const urlGroup = document.getElementById('url-group');
+      const fileGroup = document.getElementById('file-group');
+      const coverUpload = document.getElementById('cover-upload');
+      const coverImage = document.getElementById('cover-image');
+      const coverPreview = document.getElementById('cover-preview');
+      const fileUpload = document.getElementById('file-upload');
+      const gameFile = document.getElementById('game-file');
+      const filePreview = document.getElementById('file-preview');
+      const fileNameDisplay = document.getElementById('fileName-display');
+      const videoUpload = document.getElementById('video-upload');
+      const promoVideo = document.getElementById('promo-video');
+      const videoPreview = document.getElementById('video-preview');
+      const videoNameDisplay = document.getElementById('video-name-display');
+      const form = document.getElementById('create-game-form');
+      const btnBack = document.getElementById('btn-back');
+
+      btnBack.addEventListener('click', () => {
+        window.location.href = 'dashboard.html';
+      });
+
+      typeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          typeBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          uploadType = btn.dataset.type;
+          
+          if (uploadType === 'url') {
+            urlGroup.style.display = 'block';
+            fileGroup.style.display = 'none';
+          } else {
+            urlGroup.style.display = 'none';
+            fileGroup.style.display = 'block';
+          }
+        });
+      });
+
+      coverUpload.addEventListener('click', () => coverImage.click());
+      coverImage.addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+          selectedCover = e.target.files[0];
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            coverPreview.src = ev.target.result;
+            coverPreview.style.display = 'block';
+          };
+          reader.readAsDataURL(selectedCover);
+        }
+      });
+
+      fileUpload.addEventListener('click', () => gameFile.click());
+      gameFile.addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+          selectedFile = e.target.files[0];
+          fileNameDisplay.textContent = selectedFile.name;
+          filePreview.style.display = 'flex';
+        }
+      });
+
+      videoUpload.addEventListener('click', () => promoVideo.click());
+      promoVideo.addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+          selectedVideo = e.target.files[0];
+          videoNameDisplay.textContent = selectedVideo.name;
+          videoPreview.style.display = 'flex';
+        }
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // 防止重复提交
+        if (isSubmitting) {
+          return;
+        }
+        
+        hideAllErrors();
+        
+        const name = document.getElementById('game-name').value.trim();
+        const description = document.getElementById('game-description').value.trim();
+        const url = document.getElementById('game-url').value.trim();
+        
+        let isValid = true;
+        
+        if (!name) {
+          showError('name-error', '请输入游戏名称');
+          isValid = false;
+        }
+        
+        if (uploadType === 'url' && !url) {
+          showError('url-error', '请输入游戏URL');
+          isValid = false;
+        }
+        
+        if (uploadType === 'file' && !selectedFile) {
+          showError('file-error', '请选择游戏文件');
+          isValid = false;
+        }
+        
+        if (!isValid) return;
+
+        // 标记正在提交，禁用按钮
+        isSubmitting = true;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传...';
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('description', description);
+        formData.append('upload_type', uploadType);
+        formData.append('author_id', currentUser.id);
+        formData.append('author_name', currentUser.username);
+        
+        if (uploadType === 'url') {
+          formData.append('url', url);
+        } else {
+          formData.append('game_file', selectedFile);
+        }
+        
+        if (selectedCover) {
+          formData.append('cover_image', selectedCover);
+        }
+        
+        if (selectedVideo) {
+          formData.append('promo_video', selectedVideo);
+        }
+
+        try {
+          document.getElementById('upload-error').style.display = 'none';
+          document.getElementById('upload-success').style.display = 'none';
+
+          const response = await fetch(getApiBase() + '/api/games', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            document.getElementById('upload-success').style.display = 'flex';
+            setTimeout(() => {
+              window.location.href = 'dashboard.html';
+            }, 2000);
+          } else {
+            document.getElementById('error-text').textContent = data.message;
+            document.getElementById('upload-error').style.display = 'flex';
+            // 恢复按钮状态
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-upload"></i> 上传游戏';
+          }
+        } catch (error) {
+          document.getElementById('error-text').textContent = '上传失败，请稍后重试';
+          document.getElementById('upload-error').style.display = 'flex';
+          // 恢复按钮状态
+          isSubmitting = false;
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fas fa-upload"></i> 上传游戏';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

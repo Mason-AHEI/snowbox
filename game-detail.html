@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游戏详情 - Snow Box</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .detail-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .btn-back {
+      margin-bottom: 20px;
+      background: transparent;
+      color: var(--text-secondary);
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+    }
+    .btn-back:hover {
+      color: var(--primary-color);
+    }
+    .game-detail-card {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+    .game-hero {
+      width: 100%;
+      background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 300px;
+    }
+    .game-hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .game-hero i {
+      font-size: 80px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .game-info {
+      padding: 40px;
+    }
+    .game-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .game-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 0;
+    }
+    .game-author {
+      font-size: 16px;
+      color: #6B7280;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .game-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .game-btn {
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .game-btn-primary {
+      background: linear-gradient(135deg, #3B82F6, #2563EB);
+      color: white;
+    }
+    .game-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .game-btn-success {
+      background: linear-gradient(135deg, #10B981, #059669);
+      color: white;
+    }
+    .game-btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    .game-video-section {
+      margin-top: 30px;
+      margin-bottom: 30px;
+    }
+    .game-video-section h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1F2937;
+      margin-bottom: 16px;
+    }
+    .game-video {
+      width: 100%;
+      max-height: 500px;
+      border-radius: 16px;
+      background: #000;
+    }
+    .game-description-section {
+      margin-top: 30px;
+    }
+    .game-description-section h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1F2937;
+      margin-bottom: 16px;
+    }
+    .game-description {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #4B5563;
+    }
+    .message {
+      display: none;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 20px;
+      align-items: center;
+      gap: 12px;
+    }
+    .message-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+    }
+    .message-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #DC2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="detail-container">
+    <button class="btn-back" id="btn-back">
+      <i class="fas fa-arrow-left"></i>
+      返回
+    </button>
+
+    <div class="game-detail-card">
+      <div class="game-hero" id="game-hero">
+        <i class="fas fa-gamepad"></i>
+      </div>
+
+      <div class="game-info">
+        <div class="game-title-row">
+          <div>
+            <h1 class="game-title" id="game-title">游戏名称</h1>
+            <p class="game-author" id="game-author">
+              <i class="fas fa-user"></i>
+              <span>未知作者</span>
+            </p>
+          </div>
+          <div class="game-actions">
+            <button class="game-btn game-btn-primary" id="download-btn">
+              <i class="fas fa-download"></i>
+              下载
+            </button>
+          </div>
+        </div>
+
+        <div class="game-video-section" id="video-section" style="display: none;">
+          <h3>宣传视频</h3>
+          <video class="game-video" id="game-video" controls>
+            您的浏览器不支持视频播放
+          </video>
+        </div>
+
+        <div class="game-description-section">
+          <h3>游戏简介</h3>
+          <p class="game-description" id="game-description">
+            暂无简介
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="message message-success" id="success-message" style="display: none;">
+      <i class="fas fa-check-circle"></i>
+      <span id="success-text"></span>
+    </div>
+
+    <div class="message message-error" id="error-message" style="display: none;">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="error-text"></span>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    let currentGame = null;
+
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    async function loadGameDetail() {
+      const gameId = getQueryParam('id');
+      if (!gameId) {
+        showError('缺少游戏ID');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getApiBase()}/api/games/${gameId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          currentGame = data.game;
+          renderGameDetail(currentGame);
+        } else {
+          showError(data.message || '加载游戏详情失败');
+        }
+      } catch (error) {
+        showError('加载游戏详情失败');
+      }
+    }
+
+    function renderGameDetail(game) {
+      document.getElementById('game-title').textContent = game.name;
+      document.getElementById('game-author').querySelector('span').textContent = game.author_name || '未知作者';
+      document.getElementById('game-description').textContent = game.description || '暂无简介';
+
+      const gameHero = document.getElementById('game-hero');
+      const hasImage = game.has_image === 1 || game.has_image === true;
+      if (hasImage) {
+        gameHero.innerHTML = `<img src="${getApiBase()}/api/games/image/${game.id}" alt="${game.name}">`;
+      }
+
+      const videoSection = document.getElementById('video-section');
+      const gameVideo = document.getElementById('game-video');
+      const hasVideo = game.has_video === 1 || game.has_video === true;
+      if (hasVideo) {
+        gameVideo.src = `${getApiBase()}/api/games/video/${game.id}`;
+        videoSection.style.display = 'block';
+      } else {
+        videoSection.style.display = 'none';
+      }
+    }
+
+    function showSuccess(text) {
+      const successEl = document.getElementById('success-message');
+      const successText = document.getElementById('success-text');
+      successText.textContent = text;
+      successEl.style.display = 'flex';
+      document.getElementById('error-message').style.display = 'none';
+    }
+
+    function showError(text) {
+      const errorEl = document.getElementById('error-message');
+      const errorText = document.getElementById('error-text');
+      errorText.textContent = text;
+      errorEl.style.display = 'flex';
+      document.getElementById('success-message').style.display = 'none';
+    }
+
+    function downloadGame() {
+      if (!currentGame) return;
+
+      if (currentGame.file_name) {
+        window.location.href = getApiBase() + `/api/games/download/${currentGame.id}`;
+      } else if (currentGame.url) {
+        window.open(currentGame.url, '_blank');
+      } else {
+        showError('该游戏暂无下载地址');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      document.getElementById('btn-back').addEventListener('click', () => {
+        window.location.href = 'dashboard.html';
+      });
+
+      document.getElementById('download-btn').addEventListener('click', downloadGame);
+
+      loadGameDetail();
+    });
+  </script>
+</body>
+</html>
+

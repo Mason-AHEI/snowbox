@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - Snow Box</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="studio-branding-top" style="position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 12px;">
+      <img src="snowwhite.png" alt="雪花工作室" style="width: 80px; height: 80px;">
+      <span style="font-weight: 600; color: white; font-size: 18px;">雪花工作室</span>
+    </div>
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="logo">
+          <img src="logo.jpeg" alt="Snow Box Logo">
+        </div>
+        <h1>Snow Box</h1>
+        <p>欢迎回来，请登录您的账号</p>
+      </div>
+
+      <form id="login-form" class="auth-form" autocomplete="on">
+        <div class="form-group">
+          <label for="email">邮箱</label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="email" name="email" placeholder="请输入邮箱地址" autocomplete="username">
+          </div>
+          <span class="error-message" id="email-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="password">密码</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" name="password" placeholder="请输入密码" autocomplete="current-password">
+            <i class="fas fa-eye toggle-password" onclick="togglePassword('password')"></i>
+          </div>
+          <span class="error-message" id="password-error"></span>
+        </div>
+
+        <div class="form-group remember">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember-me">
+            <span>记住我</span>
+          </label>
+          <a href="#" class="forgot-password">忘记密码?</a>
+        </div>
+
+        <p style="text-align: center; font-size: 14px; color: #6B7280; margin-top: 15px;">
+          登录即表示同意我们的<a href="terms.html" style="color: #3B82F6;">服务条款</a>
+        </p>
+
+        <button type="submit" class="btn btn-primary">登录</button>
+
+        <div class="divider">
+          <span>或</span>
+        </div>
+
+        <a href="register.html" class="btn btn-secondary">注册新账号</a>
+      </form>
+
+      <div class="message message-error" id="login-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="login-error-message">登录失败</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var email = urlParams.get('email');
+      var password = urlParams.get('password');
+      
+      if (email) {
+        document.getElementById('email').value = email;
+      }
+      if (password) {
+        document.getElementById('password').value = password;
+      }
+    });
+  </script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
