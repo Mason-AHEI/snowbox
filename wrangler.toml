@@ -2,7 +2,7 @@ name = "snowbox"
 compatibility_date = "2024-01-01"
 
 [pages]
-build = { command = "", directory = "." }
+build = { command = "", directory = ".", output_dir = "." }
 
 [d1_databases]
 DB = { binding = "DB", database_name = "snow-box-db", database_id = "ea162bbd-ce17-41da-b1b2-3db1bea2f2d4" }
