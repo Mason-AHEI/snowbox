@@ -1,4 +1,4 @@
-import { jsonResponse, getCurrentTime } from '/functions/_utils';
+import { jsonResponse, getCurrentTime } from '../_utils';
 
 export async function onRequestGet(context) {
   const { env } = context;

@@ -1,4 +1,4 @@
-import { jsonResponse, parseJsonBody, queryOne, hashPassword } from '/functions/_utils';
+import { jsonResponse, parseJsonBody, queryOne, hashPassword } from '../_utils';
 
 export async function onRequestPost(context) {
   const { env, request } = context;

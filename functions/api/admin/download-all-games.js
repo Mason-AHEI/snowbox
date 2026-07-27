@@ -1,4 +1,4 @@
-import { queryAll, queryOne, getCurrentTime } from '/functions/_utils';
+import { queryAll, queryOne, getCurrentTime } from '../../_utils';
 
 export async function onRequestGet(context) {
   const { env, request } = context;

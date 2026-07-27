@@ -1,4 +1,4 @@
-import { jsonResponse, queryDB, queryOne, readFileFromChunks } from '/functions/_utils';
+import { jsonResponse, queryDB, queryOne, readFileFromChunks } from '../../_utils';
 
 export async function onRequestGet(context) {
   const { env, params } = context;

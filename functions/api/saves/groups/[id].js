@@ -1,4 +1,4 @@
-import { jsonResponse, parseJsonBody, queryDB, queryOne } from '/functions/_utils';
+import { jsonResponse, parseJsonBody, queryDB, queryOne } from '../../../_utils';
 
 export async function onRequestPut(context) {
   const { env, params, request } = context;

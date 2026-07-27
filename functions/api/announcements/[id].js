@@ -1,4 +1,4 @@
-import { jsonResponse, queryDB, queryOne } from '/functions/_utils';
+import { jsonResponse, queryDB, queryOne } from '../../_utils';
 
 export async function onRequestDelete(context) {
   const { env, params, request } = context;

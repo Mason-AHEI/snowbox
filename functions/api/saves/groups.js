@@ -1,4 +1,4 @@
-import { jsonResponse, parseJsonBody, queryDB, generateId, getCurrentTime } from '/functions/_utils';
+import { jsonResponse, parseJsonBody, queryDB, generateId, getCurrentTime } from '../../_utils';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
