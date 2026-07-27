@@ -9,7 +9,7 @@
 storage_config.json
 
 # 云存储临时目录
-saves/
+/saves/
 game_files/
 game_images/
 game_videos/
