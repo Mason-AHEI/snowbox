@@ -1,4 +1,4 @@
-import { jsonResponse, queryAll } from '../../../_utils';
+import { jsonResponse, queryAll } from '../../../../_utils';
 
 export async function onRequestGet(context) {
   const { env, params } = context;
