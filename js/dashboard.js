@@ -2555,7 +2555,8 @@ function deleteAnnouncement(announcementId) {
 
 /**
  * 设置桌面版下载按钮
- * 点击后跳转至后端 /api/download-desktop 触发浏览器下载
+ * 先调用 fetch 检查接口是否成功返回，避免浏览器直接显示 JSON 错误信息
+ * 成功后再通过隐藏 a 标签触发下载
  */
 function setupDesktopDownloadButton() {
   var downloadBtn = document.getElementById('download-desktop-btn');
@@ -2563,32 +2564,73 @@ function setupDesktopDownloadButton() {
 
   if (!downloadBtn) return;
 
-  downloadBtn.addEventListener('click', function() {
+  downloadBtn.addEventListener('click', async function() {
     var btn = downloadBtn;
     var originalHTML = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>准备下载...</span>';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>检查文件...</span>';
 
     var url = getApiBase() + '/api/download-desktop';
-    var a = document.createElement('a');
-    a.href = url;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
 
-    if (downloadTip) {
-      downloadTip.style.display = 'block';
-      downloadTip.textContent = '下载已开始，如未开始请点击按钮重试。文件较大请耐心等待。';
+    try {
+      // 先 fetch 一次校验响应，避免浏览器直接展示错误 JSON
+      var resp = await fetch(url, { method: 'GET' });
+
+      if (!resp.ok) {
+        var errText = await resp.text();
+        var errMsg = '文件暂不可用，请稍后再试';
+        try {
+          var errJson = JSON.parse(errText);
+          if (errJson && errJson.message) {
+            errMsg = errJson.message;
+          }
+        } catch (e) {}
+        showToast('❌ ' + errMsg, 'error');
+        if (downloadTip) {
+          downloadTip.style.display = 'block';
+          downloadTip.textContent = '暂未开放下载：' + errMsg;
+          downloadTip.style.color = '#EF4444';
+          downloadTip.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+          setTimeout(function() {
+            downloadTip.style.display = 'none';
+          }, 8000);
+        }
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        return;
+      }
+
+      // 校验通过，触发真正的下载
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>准备下载...</span>';
+      var a = document.createElement('a');
+      a.href = url;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      if (downloadTip) {
+        downloadTip.style.display = 'block';
+        downloadTip.textContent = '下载已开始，如未开始请点击按钮重试。文件较大请耐心等待。';
+        downloadTip.style.color = '#10B981';
+        downloadTip.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+        setTimeout(function() {
+          downloadTip.style.display = 'none';
+        }, 8000);
+      }
+
+      showToast('下载已开始，请在浏览器下载列表中查看进度', 'success');
+
       setTimeout(function() {
-        downloadTip.style.display = 'none';
-      }, 8000);
-    }
-
-    setTimeout(function() {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }, 2000);
+    } catch (err) {
+      console.error('下载桌面版失败:', err);
+      showToast('❌ 网络错误，请稍后重试', 'error');
       btn.disabled = false;
       btn.innerHTML = originalHTML;
-    }, 2000);
+    }
   });
 }
 
