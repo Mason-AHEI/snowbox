@@ -156,3 +156,66 @@ export async function readFileFromChunks(env, fileId, fileType) {
     return null;
   }
 }
+
+/**
+ * 流式读取分块文件，通过 ReadableStream 按需按批从 D1 读取
+ * 避免一次性拼接 200MB+ 大数组导致 Pages Functions CPU 超时 (Error 1102)
+ * @param env Workers/Pages env（含 DB）
+ * @param fileId 文件标识
+ * @param fileType 文件类型
+ * @param chunkBatchSize 每次从 D1 取多少个分块（默认 10，约 2.5MB @256KB 每块）
+ * @returns {{ totalSize: number, totalChunks: number, stream: ReadableStream }}
+ */
+export async function streamFileFromChunks(env, fileId, fileType, chunkBatchSize = 10) {
+  const countRow = await queryOne(env,
+    'SELECT COUNT(*) as cnt, IFNULL(SUM(chunk_size),0) as total FROM file_chunks WHERE file_id = ? AND file_type = ?',
+    [fileId, fileType]
+  );
+  const totalChunks = Number(countRow?.cnt || 0);
+  const totalSize = Number(countRow?.total || 0);
+  if (totalChunks === 0) return { totalSize: 0, totalChunks: 0, stream: null };
+
+  const makeChunkReadable = (cd) => {
+    if (cd instanceof Uint8Array) return cd;
+    if (cd instanceof ArrayBuffer) return new Uint8Array(cd);
+    if (typeof cd === 'string') return new TextEncoder().encode(cd);
+    if (cd == null) return new Uint8Array(0);
+    return new Uint8Array(cd);
+  };
+
+  // 状态放在 stream 外部，避免每次 pull 重建
+  let cursor = 0;                 // 下一个要从 D1 读取的分块下标
+  let pendingQueue = [];          // 已经从 D1 读出但尚未 enqueue 的分块队列
+  let done = false;
+
+  const stream = new ReadableStream({
+    async pull(controller) {
+      // 让出时间片，避免长时间占 CPU 触发 1102
+      await new Promise(r => setTimeout(r, 0));
+
+      // 队列为空且还有未读分块时，拉取下一批
+      while (pendingQueue.length === 0 && !done && cursor < totalChunks) {
+        const limit = Math.min(chunkBatchSize, totalChunks - cursor);
+        const batch = await queryAll(env,
+          'SELECT chunk_data FROM file_chunks WHERE file_id = ? AND file_type = ? ORDER BY chunk_index ASC LIMIT ? OFFSET ?',
+          [fileId, fileType, limit, cursor]
+        );
+        if (!batch || batch.length === 0) {
+          done = true;
+          break;
+        }
+        pendingQueue = batch.map(row => makeChunkReadable(row.chunk_data));
+        cursor += batch.length;
+        if (cursor >= totalChunks) done = true;
+      }
+
+      if (pendingQueue.length > 0) {
+        controller.enqueue(pendingQueue.shift());
+      } else {
+        controller.close();
+      }
+    },
+  });
+
+  return { totalSize, totalChunks, stream };
+}
