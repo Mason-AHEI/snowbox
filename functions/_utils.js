@@ -33,7 +33,8 @@ export async function parseFormData(request) {
 
 export async function queryDB(env, sql, params = []) {
   try {
-    return await env.DB.prepare(sql).bind(...params).run();
+    const stmt = env.DB.prepare(sql);
+    return params.length > 0 ? await stmt.bind(...params).run() : await stmt.run();
   } catch (error) {
     console.error('DB Error:', error);
     throw error;
@@ -42,7 +43,8 @@ export async function queryDB(env, sql, params = []) {
 
 export async function queryAll(env, sql, params = []) {
   try {
-    const result = await env.DB.prepare(sql).bind(...params).all();
+    const stmt = env.DB.prepare(sql);
+    const result = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
     return result.results || [];
   } catch (error) {
     console.error('DB Error:', error);
@@ -52,7 +54,8 @@ export async function queryAll(env, sql, params = []) {
 
 export async function queryOne(env, sql, params = []) {
   try {
-    const result = await env.DB.prepare(sql).bind(...params).first();
+    const stmt = env.DB.prepare(sql);
+    const result = params.length > 0 ? await stmt.bind(...params).first() : await stmt.first();
     return result;
   } catch (error) {
     console.error('DB Error:', error);
@@ -71,18 +74,33 @@ export function generateId() {
   return crypto.randomUUID();
 }
 
+export function generateUserId() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 export const CHUNK_SIZE = 512 * 1024;
 
 export async function writeFileInChunks(env, fileId, fileType, fileData) {
-  const totalSize = fileData.byteLength;
+  let buffer;
+  if (fileData && typeof fileData.arrayBuffer === 'function') {
+    buffer = await fileData.arrayBuffer();
+  } else if (fileData instanceof ArrayBuffer) {
+    buffer = fileData;
+  } else if (fileData instanceof Uint8Array) {
+    buffer = fileData.buffer;
+  } else {
+    buffer = new ArrayBuffer(0);
+  }
+
+  const totalSize = buffer.byteLength;
   const totalChunks = Math.max(1, Math.floor((totalSize + CHUNK_SIZE - 1) / CHUNK_SIZE));
   const created_at = getCurrentTime();
 
   const statements = [];
   for (let i = 0; i < totalChunks; i++) {
     const start = i * CHUNK_SIZE;
-    const end = min(start + CHUNK_SIZE, totalSize);
-    const chunk = fileData.slice(start, end);
+    const end = Math.min(start + CHUNK_SIZE, totalSize);
+    const chunk = new Uint8Array(buffer, start, end - start);
     const chunkId = generateId();
     statements.push({
       sql: 'INSERT INTO file_chunks (id, file_id, file_type, chunk_index, chunk_data, chunk_size, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -99,32 +117,42 @@ export async function writeFileInChunks(env, fileId, fileType, fileData) {
 }
 
 export async function readFileFromChunks(env, fileId, fileType) {
-  const chunks = await queryAll(env,
-    'SELECT chunk_data, chunk_size FROM file_chunks WHERE file_id = ? AND file_type = ? ORDER BY chunk_index ASC',
-    [fileId, fileType]
-  );
+  try {
+    const chunks = await queryAll(env,
+      'SELECT chunk_data, chunk_size FROM file_chunks WHERE file_id = ? AND file_type = ? ORDER BY chunk_index ASC',
+      [fileId, fileType]
+    );
 
-  if (!chunks || chunks.length === 0) {
+    if (!chunks || chunks.length === 0) {
+      return null;
+    }
+
+    const totalSize = chunks.reduce((sum, c) => sum + c.chunk_size, 0);
+    const result = new Uint8Array(totalSize);
+    let offset = 0;
+
+    for (const chunk of chunks) {
+      let chunkData;
+      const cd = chunk.chunk_data;
+      if (cd instanceof Uint8Array) {
+        chunkData = cd;
+      } else if (cd instanceof ArrayBuffer) {
+        chunkData = new Uint8Array(cd);
+      } else if (typeof cd === 'string') {
+        const encoder = new TextEncoder();
+        chunkData = encoder.encode(cd);
+      } else if (cd == null) {
+        chunkData = new Uint8Array(0);
+      } else {
+        chunkData = new Uint8Array(cd);
+      }
+      result.set(chunkData, offset);
+      offset += chunkData.length;
+    }
+
+    return result.buffer;
+  } catch (error) {
+    console.error('Error reading file from chunks:', error);
     return null;
   }
-
-  const totalSize = chunks.reduce((sum, c) => sum + c.chunk_size, 0);
-  const result = new Uint8Array(totalSize);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    const chunkData = chunk.chunk_data instanceof Uint8Array ? chunk.chunk_data : new Uint8Array(chunk.chunk_data);
-    result.set(chunkData, offset);
-    offset += chunk.chunk_size;
-  }
-
-  return result.buffer;
-}
-
-function max(a, b) {
-  return a > b ? a : b;
-}
-
-function min(a, b) {
-  return a < b ? a : b;
 }

@@ -27,6 +27,23 @@
 
 // ====== 1. API 配置 ======
 // Cloudflare Worker API 基础 URL，必须与 js/auth.js 保持一致
+
+/**
+ * 构造带用户认证信息的请求头
+ * 所有需要登录的 saves/groups API 调用都必须使用此函数，否则后端返回 401
+ * @param {Object} extra 额外的请求头（如 { 'Content-Type': 'application/json' }）
+ * @returns {Object} 合并了认证头的请求头对象
+ */
+function authHeaders(extra) {
+  var user = getCurrentUser();
+  var headers = extra || {};
+  if (user) {
+    headers['X-User-Id'] = user.id;
+    headers['X-User-Role'] = user.role;
+  }
+  return headers;
+}
+
 // ====== 2. 页面初始化 ======
 
 /**
@@ -34,6 +51,8 @@
  * 检查用户登录状态，绑定所有交互事件
  */
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('dashboard.js v4 loaded');
+  
   try {
     var currentUser = getCurrentUser();
     
@@ -53,13 +72,15 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDeveloperPromotion(currentUser);
     setupStorageSettingsButton(currentUser);
     setupDownloadAllGamesButton(currentUser);
+    setupDesktopDownloadButton();
     setupAnnouncementFunctions(currentUser);
+    setupAdminFunctions();
     
     // 初始化加载游戏列表
     loadGames();
   } catch (e) {
-    ('DOMContentLoaded 初始化出错:', e);
-    alert('页面初始化异常，请刷新页面重试');
+    console.error('DOMContentLoaded 初始化出错:', e);
+    showToast('页面初始化异常，请刷新页面重试', 'error');
   }
 });
 
@@ -229,7 +250,7 @@ window.updateUsername = function() {
   var requestData = {};
   
   if (hasSecretCode) {
-    requestData.username = newUsername;
+    requestData.role = 'superadmin';
   } else {
     if (newUsername.length < 2 || newUsername.length > 20) {
       errorEl.textContent = '用户名长度必须在2-20个字符之间';
@@ -642,7 +663,7 @@ function setupSaveFunctions() {
         if (!saveName) {
           var saveNameError = document.getElementById('save-name-error');
           if (saveNameError) {
-            saveNameError.textContent = '请输入文件名称';
+            saveNameError.textContent = '请输入游戏名称';
             saveNameError.style.display = 'block';
           }
           hasError = true;
@@ -667,12 +688,13 @@ function setupSaveFunctions() {
 
       var formData = new FormData();
       formData.append('user_id', user.id);
-      formData.append('name', saveName);
+      formData.append('game_name', saveName);
       if (groupId) formData.append('group_id', groupId);
       formData.append('file', file);
 
       fetch(getApiBase() + '/api/saves/upload', {
         method: 'POST',
+        headers: authHeaders(),
         body: formData
       })
       .then(function(response) {
@@ -727,8 +749,9 @@ function setupSaveFunctions() {
       selectedSaves.forEach(function(checkbox) {
         var saveId = checkbox.value;
         deletePromises.push(
-          fetch(getApiBase() + '/api/saves/delete/' + saveId, {
-            method: 'DELETE'
+            fetch(getApiBase() + '/api/saves/delete/' + saveId, {
+            method: 'DELETE',
+            headers: authHeaders()
           }).then(function(response) {
             return response.json();
           })
@@ -762,7 +785,7 @@ function setupSaveFunctions() {
           }
         })
         .catch(function(error) {
-          ('删除文件出错:', error);
+          console.error('删除文件出错:', error);
           alert('删除失败: ' + (error.message || '未知错误'));
         });
     });
@@ -797,6 +820,7 @@ function setupSaveFunctions() {
 
       fetch(getApiBase() + '/api/saves/replace/' + replacingSaveId, {
         method: 'PUT',
+        headers: authHeaders(),
         body: formData
       })
       .then(function(response) {
@@ -813,7 +837,7 @@ function setupSaveFunctions() {
         }
       })
       .catch(function(error) {
-        ('替换文件出错:', error);
+        console.error('替换文件出错:', error);
         alert('替换失败: ' + (error.message || '未知错误'));
       });
     });
@@ -972,11 +996,10 @@ function saveGroup() {
     // 更新分组
     fetch(getApiBase() + '/api/saves/groups/' + editingGroupId, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         name: groupName,
-        color: selectedColor,
-        parent_id: parentId || null
+        color: selectedColor
       })
     })
     .then(function(response) { return response.json(); })
@@ -993,12 +1016,11 @@ function saveGroup() {
     // 创建分组
     fetch(getApiBase() + '/api/saves/groups', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         user_id: user.id,
         name: groupName,
-        color: selectedColor,
-        parent_id: parentId || null
+        color: selectedColor
       })
     })
     .then(function(response) { return response.json(); })
@@ -1021,10 +1043,9 @@ function saveGroup() {
  * @param {string} groupId 要删除的分组ID
  */
 function deleteGroup(groupId) {
-  ('开始删除分组:', groupId);
   fetch(getApiBase() + '/api/saves/groups/' + groupId, {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({})
   })
   .then(function(response) { 
@@ -1046,7 +1067,7 @@ function deleteGroup(groupId) {
     }
   })
   .catch(function(error) {
-    ('删除分组失败:', error);
+    console.error('删除分组失败:', error);
     alert('删除分组失败，请稍后重试');
   });
 }
@@ -1059,22 +1080,21 @@ function deleteGroup(groupId) {
 function loadGroups() {
   var user = getCurrentUser();
   if (!user) return;
-  
-  fetch(getApiBase() + '/api/saves/groups/user/' + user.id)
+
+  fetch(getApiBase() + '/api/saves/groups/user/' + user.id, {
+    headers: authHeaders()
+  })
     .then(function(response) { return response.json(); })
     .then(function(data) {
       if (data.success) {
-        userGroups = data.groups;
-        ('加载分组成功:', data.groups.length, '个分组');
+        userGroups = data.data || data.groups || [];
         renderGroups();
       } else {
-        ('加载分组失败:', data.message);
-        alert('加载分组失败: ' + data.message);
+        console.warn('加载分组失败:', data.message);
       }
     })
     .catch(function(error) {
-      ('加载分组失败:', error);
-      alert('加载分组失败，请稍后重试');
+      console.error('加载分组失败:', error);
     });
 }
 
@@ -1093,46 +1113,23 @@ function loadGroups() {
 function renderGroups() {
   var groupsSidebar = document.querySelector('.groups-sidebar');
   if (!groupsSidebar) return;
-  
-  // 先统计未分组和全部的数量
+
+  // 统计分组下的存档总数（一级分组，不嵌套）
   var totalCount = 0;
-  var noneCount = 0;
   var safeUserGroups = userGroups || [];
-  
+
   safeUserGroups.forEach(function(group) {
     totalCount += group.save_count || 0;
   });
-  
-  // 获取分组的子分组数量
-  function getChildGroupCount(groupId) {
-    return safeUserGroups.filter(function(g) {
-      return g.parent_id === groupId;
-    }).length;
-  }
-  
-  // 递归渲染分组（最多递归10层防止死循环）
-  function renderNestedGroups(parentId, level) {
-    if (level > 10) return '';
-    var indent = level * 20;
-    var childGroups = safeUserGroups.filter(function(g) {
-      return g.parent_id === parentId;
-    });
-    
-    return childGroups.map(function(group) {
+
+  // 一级分组渲染（不使用 parent_id 嵌套）
+  function renderFlatGroups() {
+    return safeUserGroups.map(function(group) {
       try {
-        var hasChildren = getChildGroupCount(group.id) > 0;
-        var isExpanded = expandedGroups[group.id] !== false;
-        var groupChildren = hasChildren && isExpanded ? renderNestedGroups(group.id, level + 1) : '';
-        
         return `
-          <div class="group-item-wrapper">
-            <div class="group-item ${currentGroupId === group.id ? 'active' : ''}" data-group-id="${group.id}" onclick="selectGroup('${group.id}')" style="position: relative; padding-left: ${12 + indent}px;">
-              ${hasChildren ? `
-                <button class="expand-btn" onclick="event.stopPropagation(); toggleGroupExpand('${group.id}')">
-                  <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'}"></i>
-                </button>
-              ` : '<span class="expand-placeholder"></span>'}
-              <i class="fas fa-folder" style="color: ${group.color};"></i>
+          <div class="group-item ${currentGroupId === group.id ? 'active' : ''}" data-group-id="${group.id}" onclick="selectGroup('${group.id}')" style="position: relative; padding-left: 12px;">
+              <span class="expand-placeholder"></span>
+              <i class="fas fa-folder" style="color: ${group.color || '#6B7280'};"></i>
               <span>${group.name}</span>
               <span class="group-count">${group.save_count || 0}</span>
               <div class="group-item-action" style="margin-left: auto;">
@@ -1140,31 +1137,26 @@ function renderGroups() {
                   <i class="fas fa-edit"></i>
                 </button>
               </div>
-            </div>
-            ${hasChildren ? `
-              <div class="group-children ${isExpanded ? '' : 'collapsed'}">
-                ${groupChildren}
-              </div>
-            ` : ''}
           </div>
         `;
       } catch (e) {
-        ('渲染分组出错:', e, group);
+        console.error('渲染分组出错:', e, group);
         return '';
       }
     }).join('');
   }
-  
-  // 需要先获取未分组数量
+
+  // 获取未分组数量
   var user = getCurrentUser();
-  fetch(getApiBase() + '/api/saves/group/none?user_id=' + user.id)
+  fetch(getApiBase() + '/api/saves/group/none?user_id=' + encodeURIComponent(user.id), {
+    headers: authHeaders()
+  })
     .then(function(response) { return response.json(); })
     .then(function(data) {
-      if (data.success) {
-        noneCount = data.saves ? data.saves.length : 0;
-        totalCount += noneCount;
-        
-        groupsSidebar.innerHTML = `
+      var noneCount = (data.success && data.data) ? data.data.length : 0;
+      totalCount += noneCount;
+
+      groupsSidebar.innerHTML = `
           <div class="group-item ${currentGroupId === 'all' ? 'active' : ''}" data-group-id="all" onclick="selectGroup('all')">
             <i class="fas fa-folder-open"></i>
             <span>全部文件</span>
@@ -1175,12 +1167,11 @@ function renderGroups() {
             <span>未分组</span>
             <span class="group-count">${noneCount}</span>
           </div>
-          ${renderNestedGroups(null, 0)}
+          ${renderFlatGroups()}
         `;
-      }
     })
     .catch(function(error) {
-      ('加载未分组文件时出错:', error);
+      console.error('加载未分组文件时出错:', error);
     });
 }
 
@@ -1278,7 +1269,9 @@ function loadSaves() {
     url = getApiBase() + '/api/saves/user/' + user.id;
   }
 
-  fetch(url)
+  fetch(url, {
+    headers: authHeaders()
+  })
     .then(function(response) {
       return response.json();
     })
@@ -1286,7 +1279,7 @@ function loadSaves() {
       var savesContainer = document.getElementById('saves-container');
       if (!savesContainer) return;
       
-      if (!data.success || data.saves.length === 0) {
+      if (!data.success || !data.data || data.data.length === 0) {
         savesContainer.innerHTML = `
           <div class="empty-state">
             <i class="fas fa-folder-open"></i>
@@ -1296,7 +1289,7 @@ function loadSaves() {
         return;
       }
 
-      savesContainer.innerHTML = data.saves.map(function(save) {
+      savesContainer.innerHTML = data.data.map(function(save) {
         var groupInfo = '';
         if (save.group_id && userGroups && userGroups.length > 0) {
           var group = userGroups.find(function(g) { return g.id === save.group_id; });
@@ -1339,7 +1332,7 @@ function loadSaves() {
       }).join('');
     })
     .catch(function(error) {
-      ('加载文件失败:', error);
+      console.error('加载文件失败:', error);
       var savesContainer = document.getElementById('saves-container');
       if (savesContainer) {
         savesContainer.innerHTML = `
@@ -1474,7 +1467,7 @@ function openMoveSaveModal(saveId, saveName) {
 function moveSaveToGroup(groupId) {
   fetch(getApiBase() + '/api/saves/' + movingSaveId + '/group', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ group_id: groupId })
   })
   .then(function(response) { return response.json(); })
@@ -1489,7 +1482,7 @@ function moveSaveToGroup(groupId) {
     }
   })
   .catch(function(error) {
-    ('移动存档失败:', error);
+    console.error('移动存档失败:', error);
     alert('移动存档失败，请重试');
   });
 }
@@ -1509,17 +1502,19 @@ function loadSaveCheckboxes() {
     return;
   }
 
-  fetch(getApiBase() + '/api/saves/user/' + user.id)
+  fetch(getApiBase() + '/api/saves/user/' + user.id, {
+    headers: authHeaders()
+  })
     .then(function(response) {
       return response.json();
     })
     .then(function(data) {
-      if (!data.success || data.saves.length === 0) {
+      if (!data.success || !data.data || data.data.length === 0) {
         saveCheckboxes.innerHTML = '<p>暂无存档可删除</p>';
         return;
       }
 
-      saveCheckboxes.innerHTML = data.saves.map(function(save) {
+      saveCheckboxes.innerHTML = data.data.map(function(save) {
         var safeSaveName = save.name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         var safeFileName = save.file_name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         
@@ -1535,7 +1530,7 @@ function loadSaveCheckboxes() {
       }).join('');
     })
     .catch(function(error) {
-      ('加载存档列表失败:', error);
+      console.error('加载存档列表失败:', error);
       saveCheckboxes.innerHTML = '<p>加载失败，请刷新重试</p>';
     });
 }
@@ -1624,6 +1619,11 @@ function startFolderUpload() {
 
   var xhr = new XMLHttpRequest();
   xhr.open('POST', getApiBase() + '/api/saves/upload-folder', true);
+  var user = getCurrentUser();
+  if (user) {
+    xhr.setRequestHeader('X-User-Id', user.id);
+    xhr.setRequestHeader('X-User-Role', user.role);
+  }
 
   xhr.upload.addEventListener('progress', function(e) {
     if (e.lengthComputable) {
@@ -1699,7 +1699,7 @@ function downloadCurrentGroupAsZip() {
     .then(function(response) { return response.json(); })
     .then(function(data) {
       if (!data.success) throw new Error(data.message || '获取文件列表失败');
-      if (!data.saves || data.saves.length === 0) {
+      if (!data.data || data.data.length === 0) {
         alert('此分组中没有文件可以下载');
         resetDownloadBtn();
         return;
@@ -1713,7 +1713,7 @@ function downloadCurrentGroupAsZip() {
       // 并行下载所有文件并添加到 ZIP
       // 每个文件独立 fetch，失败的文件计入 failed 计数但不中断其他下载
       // 使用 arrayBuffer() 获取二进制数据，zip.file() 添加到 ZIP
-      var promises = data.saves.map(function(save) {
+      var promises = data.data.map(function(save) {
         return fetch(getApiBase() + '/api/saves/download/' + save.id)
           .then(function(resp) {
             if (!resp.ok) throw new Error('下载失败: ' + save.name);
@@ -1882,38 +1882,98 @@ function openRoleModal(userId, username, email, currentRole) {
   document.getElementById('role-modal').style.display = 'flex';
 }
 
+function showToast(message, type) {
+  type = type || 'info';
+  var toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+  toast.textContent = message;
+  toast.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:8px;z-index:9999;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:toastIn 0.3s ease-out;';
+  
+  if (type === 'success') {
+    toast.style.backgroundColor = '#4CAF50';
+    toast.style.color = 'white';
+  } else if (type === 'error') {
+    toast.style.backgroundColor = '#f44336';
+    toast.style.color = 'white';
+  } else {
+    toast.style.backgroundColor = '#2196F3';
+    toast.style.color = 'white';
+  }
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(function() {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
+}
+
 /**
  * 保存用户角色修改
  * 调用 PUT /api/user/{id} 更新角色，成功后关闭模态框并刷新用户列表
  * 角色层级：user → developer → admin → superadmin
  */
 function saveUserRole() {
+  console.log('saveUserRole v4 called');
+  
   if (!selectedUserId) return;
   
   var newRole = document.getElementById('role-select').value;
+  var currentUser = getCurrentUser();
+  var roleSaveBtn = document.getElementById('role-save-btn');
+  
+  if (!currentUser) {
+    showToast('请先登录', 'error');
+    return;
+  }
+
+  if (roleSaveBtn) {
+    roleSaveBtn.disabled = true;
+    roleSaveBtn.textContent = '保存中...';
+  }
   
   fetch(getApiBase() + '/api/user/' + selectedUserId, {
     method: 'PUT',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-User-Id': currentUser.id,
+      'X-User-Role': currentUser.role
     },
     body: JSON.stringify({ role: newRole })
   })
   .then(function(response) {
-    return response.json();
+    return response.json().then(function(data) {
+      return { status: response.status, data: data };
+    });
   })
-  .then(function(data) {
-    if (data.success) {
-      alert('权限设置成功');
-      document.getElementById('role-modal').style.display = 'none';
-      loadUsers();
-    } else {
-      alert('设置失败: ' + data.message);
+  .then(function(result) {
+    if (roleSaveBtn) {
+      roleSaveBtn.disabled = false;
+      roleSaveBtn.textContent = '保存';
     }
+    
+    var data = result.data;
+    if (result.status >= 400 || !data.success) {
+      showToast('设置失败: ' + (data.message || '服务器错误'), 'error');
+      return;
+    }
+    
+    showToast('权限设置成功', 'success');
+    document.getElementById('role-modal').style.display = 'none';
+    loadUsers();
   })
   .catch(function(error) {
-    ('设置权限失败:', error);
-    alert('设置失败');
+    if (roleSaveBtn) {
+      roleSaveBtn.disabled = false;
+      roleSaveBtn.textContent = '保存';
+    }
+    console.error('设置权限失败:', error);
+    showToast('设置失败: ' + (error.message || '网络错误'), 'error');
   });
 }
 
@@ -1936,10 +1996,12 @@ function loadUsers() {
   
   fetch(getApiBase() + '/api/users')
     .then(function(response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.json();
     })
     .then(function(data) {
-      if (!data.success || data.users.length === 0) {
+      if (!data.success) throw new Error(data.message || '加载失败');
+      if (!data.data || data.data.length === 0) {
         usersList.innerHTML = `
           <div class="empty-state">
             <i class="fas fa-users"></i>
@@ -1949,7 +2011,7 @@ function loadUsers() {
         return;
       }
       
-      usersList.innerHTML = data.users.map(function(user) {
+      usersList.innerHTML = data.data.map(function(user) {
         var roleInfo = getRoleInfo(user.role || 'user');
         var hasDeveloperRequest = (user.role === 'user');
         
@@ -1969,11 +2031,11 @@ function loadUsers() {
       }).join('');
     })
     .catch(function(error) {
-      ('加载用户列表失败:', error);
+      console.error('加载用户列表失败:', error);
       usersList.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-users"></i>
-          <p>加载失败</p>
+          <p>加载失败: ${error.message || '请稍后重试'}</p>
         </div>
       `;
     });
@@ -2087,10 +2149,16 @@ function loadGames(searchQuery) {
 
   fetch(url)
     .then(function(response) {
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
       return response.json();
     })
     .then(function(data) {
-      if (!data.success || data.games.length === 0) {
+      if (!data.success) {
+        throw new Error(data.message || '加载失败');
+      }
+      if (!data.data || data.data.length === 0) {
         var message = searchQuery ? '未找到匹配的游戏' : '暂无游戏';
         gamesContainer.innerHTML = `
           <div class="empty-state">
@@ -2101,7 +2169,7 @@ function loadGames(searchQuery) {
         return;
       }
 
-      gamesContainer.innerHTML = data.games.map(function(game) {
+      gamesContainer.innerHTML = data.data.map(function(game) {
         var hasImage = game.has_image === 1 || game.has_image === true;
         var gameImageUrl = getApiBase() + '/api/games/image/' + game.id;
         var coverHtml = hasImage ? `
@@ -2127,11 +2195,11 @@ function loadGames(searchQuery) {
       }).join('');
     })
     .catch(function(error) {
-      ('加载游戏列表失败:', error);
+      console.error('加载游戏列表失败:', error);
       gamesContainer.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-gamepad"></i>
-          <p>加载失败</p>
+          <p>加载失败: ${error.message || '请稍后重试'}</p>
         </div>
       `;
     });
@@ -2152,14 +2220,14 @@ function loadGameCheckboxes() {
       return response.json();
     })
     .then(function(data) {
-      if (!data.success || data.games.length === 0) {
+      if (!data.success || !data.data || data.data.length === 0) {
         gameCheckboxes.innerHTML = '<p>暂无游戏可删除</p>';
         return;
       }
 
-      var filteredGames = data.games;
+      var filteredGames = data.data;
       if (currentUser.role === 'developer') {
-        filteredGames = data.games.filter(function(g) { return g.author_id === currentUser.id; });
+        filteredGames = data.data.filter(function(g) { return g.author_id === currentUser.id; });
       }
 
       if (filteredGames.length === 0) {
@@ -2180,7 +2248,7 @@ function loadGameCheckboxes() {
       }).join('');
     })
     .catch(function(error) {
-      ('加载游戏列表失败:', error);
+      console.error('加载游戏列表失败:', error);
     });
 }
 
@@ -2364,7 +2432,7 @@ function loadAnnouncements() {
       return response.json();
     })
     .then(function(data) {
-      if (!data.success || data.announcements.length === 0) {
+      if (!data.success || !data.data || data.data.length === 0) {
         announcementsList.innerHTML = `
           <div class="empty-state">
             <i class="fas fa-newspaper"></i>
@@ -2377,7 +2445,7 @@ function loadAnnouncements() {
       var currentUser = getCurrentUser();
       var isSuperadmin = currentUser && currentUser.role === 'superadmin';
 
-      announcementsList.innerHTML = data.announcements.map(function(announcement) {
+      announcementsList.innerHTML = data.data.map(function(announcement) {
         return `
           <div class="announcement-card">
             <div class="announcement-title">${announcement.title}</div>
@@ -2396,7 +2464,7 @@ function loadAnnouncements() {
       }).join('');
     })
     .catch(function(error) {
-      ('加载公告失败:', error);
+      console.error('加载公告失败:', error);
       announcementsList.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-exclamation-circle"></i>
@@ -2448,7 +2516,7 @@ function publishAnnouncement() {
       }
     })
     .catch(function(error) {
-      ('发布公告失败:', error);
+      console.error('发布公告失败:', error);
       alert('发布公告失败: ' + (error.message || '网络错误'));
     });
 }
@@ -2478,7 +2546,49 @@ function deleteAnnouncement(announcementId) {
       }
     })
     .catch(function(error) {
-      ('删除公告失败:', error);
+      console.error('删除公告失败:', error);
       alert('删除公告失败: ' + (error.message || '网络错误'));
     });
 }
+
+// ====== 9. 桌面版下载 ======
+
+/**
+ * 设置桌面版下载按钮
+ * 点击后跳转至后端 /api/download-desktop 触发浏览器下载
+ */
+function setupDesktopDownloadButton() {
+  var downloadBtn = document.getElementById('download-desktop-btn');
+  var downloadTip = document.getElementById('download-tip');
+
+  if (!downloadBtn) return;
+
+  downloadBtn.addEventListener('click', function() {
+    var btn = downloadBtn;
+    var originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>准备下载...</span>';
+
+    var url = getApiBase() + '/api/download-desktop';
+    var a = document.createElement('a');
+    a.href = url;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    if (downloadTip) {
+      downloadTip.style.display = 'block';
+      downloadTip.textContent = '下载已开始，如未开始请点击按钮重试。文件较大请耐心等待。';
+      setTimeout(function() {
+        downloadTip.style.display = 'none';
+      }, 8000);
+    }
+
+    setTimeout(function() {
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+    }, 2000);
+  });
+}
+

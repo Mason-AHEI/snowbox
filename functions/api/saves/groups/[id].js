@@ -23,11 +23,12 @@ export async function onRequestPut(context) {
     return jsonResponse({ success: false, message: '无权修改该分组' }, 403);
   }
 
-  await queryDB(env, 'UPDATE save_groups SET name = ? WHERE id = ?', [body.name, id]);
+  const color = body.color || group.color || '#6B7280';
+  await queryDB(env, 'UPDATE save_groups SET name = ?, color = ? WHERE id = ?', [body.name, color, id]);
 
   return jsonResponse({
     success: true,
-    message: '分组名称更新成功',
+    message: '分组更新成功',
   });
 }
 

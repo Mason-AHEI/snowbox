@@ -65,3 +65,6 @@ Thumbs.db
 # 备份文件
 *.backup
 users_backup_*.db
+
+# Wrangler 本地缓存
+.wrangler/

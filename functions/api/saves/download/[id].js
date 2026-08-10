@@ -15,7 +15,7 @@ export async function onRequestGet(context) {
     return jsonResponse({ success: false, message: '无权下载该存档' }, 403);
   }
 
-  const fileData = await readFileFromChunks(env, id);
+  const fileData = await readFileFromChunks(env, id, 'save_file');
   if (!fileData) {
     return jsonResponse({ success: false, message: '存档文件不存在' }, 404);
   }
@@ -23,7 +23,7 @@ export async function onRequestGet(context) {
   return new Response(fileData, {
     headers: {
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${save.file_name}"`,
+      'Content-Disposition': 'attachment; filename="' + save.file_name + '"',
       'Content-Length': save.file_size,
     },
   });

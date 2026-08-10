@@ -9,7 +9,7 @@ export async function onRequestGet(context) {
     return jsonResponse({ success: false, message: '游戏不存在' }, 404);
   }
 
-  const fileData = await readFileFromChunks(env, id, 'game_file');
+  const fileData = await readFileFromChunks(env, id, 'game');
   if (!fileData) {
     return jsonResponse({ success: false, message: '游戏文件不存在' }, 404);
   }
@@ -17,8 +17,8 @@ export async function onRequestGet(context) {
   return new Response(fileData, {
     headers: {
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${game.file_name}"`,
-      'Access-Control-Allow-Origin': '*',
+      'Content-Disposition': 'attachment; filename="' + (game.file_name || game.name) + '"',
+      'Content-Length': game.file_size,
     },
   });
 }

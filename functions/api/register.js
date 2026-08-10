@@ -1,4 +1,4 @@
-import { jsonResponse, parseJsonBody, queryDB, queryOne, hashPassword, generateId, getCurrentTime } from '../_utils';
+import { jsonResponse, parseJsonBody, queryDB, queryOne, hashPassword, generateUserId, getCurrentTime } from '../_utils';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -19,7 +19,17 @@ export async function onRequestPost(context) {
   }
 
   const hashedPassword = await hashPassword(body.password);
-  const userId = generateId();
+  
+  let userId;
+  let attempts = 0;
+  do {
+    userId = generateUserId();
+    attempts++;
+    if (attempts > 100) {
+      return jsonResponse({ success: false, message: '系统繁忙，请稍后重试' }, 500);
+    }
+  } while (await queryOne(env, 'SELECT id FROM users WHERE id = ?', [userId]));
+  
   const createdAt = getCurrentTime();
 
   let isSecretUpgrade = false;

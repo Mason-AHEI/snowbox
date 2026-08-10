@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上传安装包 - Snow Box</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .upload-page {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 60px 20px;
+    }
+    .upload-container {
+      max-width: 600px;
+      width: 100%;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+    }
+    .upload-icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      color: #93c5fd;
+    }
+    .drop-zone {
+      border: 3px dashed rgba(255,255,255,0.3);
+      border-radius: 15px;
+      padding: 40px 20px;
+      margin: 30px 0;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #93c5fd;
+      background: rgba(255,255,255,0.05);
+    }
+    .drop-zone i {
+      font-size: 40px;
+      margin-bottom: 15px;
+      color: #93c5fd;
+    }
+    .drop-zone p {
+      font-size: 16px;
+      opacity: 0.8;
+    }
+    .file-input {
+      display: none;
+    }
+    .file-info {
+      background: rgba(0,0,0,0.2);
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+      text-align: left;
+      display: none;
+    }
+    .file-info.show {
+      display: block;
+    }
+    .file-info p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    .file-info strong {
+      color: #93c5fd;
+    }
+    .progress-container {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 20px 0;
+      display: none;
+    }
+    .progress-container.show {
+      display: block;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 30px;
+      background: linear-gradient(90deg, #10b981, #3b82f6);
+      transition: width 0.3s;
+    }
+    .progress-text {
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    .upload-btn {
+      background: white;
+      color: #1e3a8a;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 14px 40px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      margin: 10px;
+    }
+    .upload-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    .upload-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status-message {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 10px;
+      display: none;
+    }
+    .status-message.show {
+      display: block;
+    }
+    .status-success {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+    }
+    .status-error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+    }
+    .back-link {
+      color: white;
+      text-decoration: none;
+      opacity: 0.8;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+    }
+    .warning {
+      background: rgba(251, 191, 36, 0.2);
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 13px;
+      text-align: left;
+    }
+    .warning i {
+      color: #fbbf24;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <div class="logo">
+          <img src="logo.jpeg" alt="Snow Box Logo">
+          <span>Snow Box</span>
+        </div>
+        <div class="nav-buttons">
+          <a href="index.html" class="btn btn-secondary">返回首页</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <section class="upload-page">
+    <div class="container">
+      <div class="upload-container">
+        <div class="upload-icon">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <h1>上传桌面版安装包</h1>
+        <p style="opacity: 0.8; margin: 10px 0;">将 SnowBox-Setup.exe 上传到服务器</p>
+
+        <div class="warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <strong>注意：</strong>文件较大（约 255MB），请确保在网络环境良好时上传。上传过程中请勿关闭页面。
+        </div>
+
+        <div class="drop-zone" id="drop-zone">
+          <i class="fas fa-cloud"></i>
+          <p>点击选择文件 或 拖拽文件到这里</p>
+          <p style="font-size: 12px; opacity: 0.6;">仅支持 .exe 文件</p>
+        </div>
+        <input type="file" id="file-input" class="file-input" accept=".exe">
+
+        <div class="file-info" id="file-info">
+          <p><strong>文件名：</strong><span id="file-name">-</span></p>
+          <p><strong>大小：</strong><span id="file-size">-</span></p>
+          <p><strong>分块数：</strong><span id="chunk-count">-</span></p>
+        </div>
+
+        <button class="upload-btn" id="upload-btn" disabled>
+          <i class="fas fa-upload"></i> 开始上传
+        </button>
+
+        <div class="progress-container" id="progress-container">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <p class="progress-text" id="progress-text">准备上传...</p>
+
+        <div class="status-message" id="status-message">
+          <p id="status-text"></p>
+        </div>
+
+        <a href="index.html" class="back-link">
+          <i class="fas fa-arrow-left"></i> 返回首页
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Snow Box. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    const CHUNK_SIZE = 256 * 1024; // 256KB per chunk (D1 limit is 1MB, keep safe margin)
+    const FILE_ID = 'snowbox-desktop-v1';
+    const FILE_TYPE = 'desktop_app';
+    const API_BASE = '';
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileInfo = document.getElementById('file-info');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const chunkCount = document.getElementById('chunk-count');
+    const uploadBtn = document.getElementById('upload-btn');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const statusMessage = document.getElementById('status-message');
+    const statusText = document.getElementById('status-text');
+
+    let selectedFile = null;
+
+    // 点击选择文件
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // 拖拽支持
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    function handleFile(file) {
+      if (!file.name.endsWith('.exe')) {
+        alert('请选择 .exe 文件');
+        return;
+      }
+
+      selectedFile = file;
+      const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+      const chunks = Math.ceil(file.size / CHUNK_SIZE);
+
+      fileName.textContent = file.name;
+      fileSize.textContent = sizeMB + ' MB';
+      chunkCount.textContent = chunks + ' 块 (每块 256KB)';
+      fileInfo.classList.add('show');
+      uploadBtn.disabled = false;
+      hideStatus();
+    }
+
+    uploadBtn.addEventListener('click', startUpload);
+
+    // 安全解析 JSON：先读 text，判断是不是 JSON，不是的话直接报错
+    async function safeJson(response) {
+      const ct = response.headers.get('content-type') || '';
+      const text = await response.text();
+      if (ct.includes('application/json') && text.trim().startsWith('{')) {
+        try { return JSON.parse(text); }
+        catch (e) { return { success: false, message: '响应解析失败: ' + text.substring(0, 100) }; }
+      }
+      return {
+        success: false,
+        message: '服务器返回了非JSON内容（可能是错误页面）。HTTP ' + response.status + '：' +
+                 (text.startsWith('<!DOCTYPE') ? '页面重定向/错误页' : text.substring(0, 100))
+      };
+    }
+
+    // 带重试的 fetch
+    async function fetchWithRetry(url, options, retries) {
+      retries = typeof retries === 'number' ? retries : 3;
+      let lastErr = null;
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const res = await fetch(url, options);
+          const data = await safeJson(res);
+          if (data.success) return data;
+          lastErr = new Error(data.message || '请求失败');
+        } catch (e) {
+          lastErr = e;
+        }
+        if (attempt < retries) {
+          progressText.textContent += ` (第${attempt}次失败，重试...)`;
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
+      throw lastErr;
+    }
+
+    // FileReader 读取 Blob 为 ArrayBuffer（兼容更好）
+    function blobToArrayBuffer(blob) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = () => reject(fr.error);
+        fr.readAsArrayBuffer(blob);
+      });
+    }
+
+    async function startUpload() {
+      if (!selectedFile) return;
+
+      uploadBtn.disabled = true;
+      progressContainer.classList.add('show');
+      hideStatus();
+
+      const fileSize = selectedFile.size;
+      const totalChunks = Math.ceil(fileSize / CHUNK_SIZE);
+
+      try {
+        progressText.textContent = '正在清除旧数据...';
+
+        // 先清除旧数据
+        await fetchWithRetry(API_BASE + '/api/upload-desktop-clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_id: FILE_ID, file_type: FILE_TYPE })
+        }, 2);
+
+        // 分块上传
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, fileSize);
+          const blob = selectedFile.slice(start, end);
+          const arrayBuffer = await blobToArrayBuffer(blob);
+
+          // 高效 base64：使用 FileReader 直接读，避免 fromCharCode 分块循环
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          const step = 32768;
+          for (let j = 0; j < bytes.length; j += step) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(j, j + step));
+          }
+          const base64 = btoa(binary);
+
+          progressText.textContent = `上传中: ${i + 1}/${totalChunks} 块 (${((i + 1) / totalChunks * 100).toFixed(1)}%)`;
+          progressBar.style.width = ((i + 1) / totalChunks * 100) + '%';
+
+          await fetchWithRetry(API_BASE + '/api/upload-desktop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chunk_index: i,
+              chunk_total: totalChunks,
+              chunk_data: base64
+            })
+          }, 3);
+        }
+
+        // 标记完成
+        progressText.textContent = '完成！正在验证...';
+        progressBar.style.width = '98%';
+
+        const finalizeData = await fetchWithRetry(API_BASE + '/api/upload-desktop-finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file_id: FILE_ID,
+            file_type: FILE_TYPE,
+            file_name: selectedFile.name
+          })
+        }, 2);
+
+        progressBar.style.width = '100%';
+        progressText.textContent = '上传完成！共 ' + finalizeData.data.chunk_count + ' 个分块';
+        showStatus('✓ 安装包上传成功！访问 desktop.html 即可下载', 'success');
+
+      } catch (error) {
+        console.error('上传出错:', error);
+        showStatus('上传失败: ' + (error.message || '未知错误'), 'error');
+        uploadBtn.disabled = false;
+      }
+    }
+
+    function showStatus(text, type) {
+      statusText.textContent = text;
+      statusMessage.className = 'status-message show status-' + type;
+    }
+
+    function hideStatus() {
+      statusMessage.className = 'status-message';
+    }
+  </script>
+</body>
+</html>

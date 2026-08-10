@@ -40,7 +40,7 @@ export async function onRequestPost(context) {
 
   return jsonResponse({
     success: true,
-    message: `成功上传 ${results.length} 个文件`,
+    message: '成功上传 ' + results.length + ' 个文件',
     data: results,
   });
 }

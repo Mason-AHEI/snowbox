@@ -25,6 +25,19 @@ export async function onRequestPut(context) {
     return jsonResponse({ success: false, message: '用户不存在' }, 404);
   }
 
+  const requesterId = request.headers.get('X-User-Id');
+  const requesterRole = request.headers.get('X-User-Role');
+  const isSelfUpdate = requesterId === id;
+  const isAdminUpdate = requesterRole === 'superadmin';
+
+  if (body.role && !isAdminUpdate) {
+    return jsonResponse({ success: false, message: '权限不足，只有主管理员可以修改角色' }, 403);
+  }
+
+  if (!isSelfUpdate && !isAdminUpdate) {
+    return jsonResponse({ success: false, message: '权限不足' }, 403);
+  }
+
   let updates = [];
   let paramsList = [];
 
@@ -52,11 +65,17 @@ export async function onRequestPut(context) {
   }
 
   if (updates.length === 0) {
-    return jsonResponse({ success: false, message: '没有需要更新的内容' }, 400);
+    const updatedUser = await queryOne(env, 'SELECT id, username, email, role, created_at FROM users WHERE id = ?', [id]);
+    return jsonResponse({
+      success: true,
+      message: '资料已是最新',
+      data: updatedUser,
+    });
   }
 
   paramsList.push(id);
-  await queryDB(env, `UPDATE users SET ${updates.join(', ')} WHERE id = ?`, paramsList);
+  const updateSql = 'UPDATE users SET ' + updates.join(', ') + ' WHERE id = ?';
+  await queryDB(env, updateSql, paramsList);
 
   const updatedUser = await queryOne(env, 'SELECT id, username, email, role, created_at FROM users WHERE id = ?', [id]);
   

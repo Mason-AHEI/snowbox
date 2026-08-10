@@ -14,9 +14,10 @@ export async function onRequestPost(context) {
   }
 
   const groupId = generateId();
+  const color = body.color || '#6B7280';
   await queryDB(env,
-    'INSERT INTO save_groups (id, user_id, name, created_at) VALUES (?, ?, ?, ?)',
-    [groupId, userId, body.name, getCurrentTime()]
+    'INSERT INTO save_groups (id, user_id, name, color, created_at) VALUES (?, ?, ?, ?, ?)',
+    [groupId, userId, body.name, color, getCurrentTime()]
   );
 
   return jsonResponse({
@@ -25,6 +26,7 @@ export async function onRequestPost(context) {
     data: {
       id: groupId,
       name: body.name,
+      color: color,
     },
   });
 }

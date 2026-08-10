@@ -353,6 +353,73 @@ body {
   margin: 0;
 }
 
+.download-desktop-content {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.download-card {
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 420px;
+  width: 100%;
+}
+
+.download-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: white;
+  margin: 0 auto 24px;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+}
+
+.download-info h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.download-version {
+  font-size: 14px;
+  color: #3B82F6;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.download-desc {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0 0 28px;
+}
+
+.download-card .btn-primary {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 24px;
+  font-size: 15px;
+  border-radius: 12px;
+}
+
+.download-tip {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #10B981;
+  background-color: rgba(16, 185, 129, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
 .announcements-section {
   background-color: rgba(245, 158, 11, 0.05);
   border: 1px solid rgba(245, 158, 11, 0.2);

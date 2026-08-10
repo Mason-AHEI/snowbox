@@ -48,7 +48,7 @@ export async function onRequestGet(context) {
   return new Response(content, {
     headers: {
       'Content-Type': 'application/json',
-      'Content-Disposition': `attachment; filename="snow-box-games-${Date.now()}.json"`,
+      'Content-Disposition': 'attachment; filename="snow-box-games-' + Date.now() + '.json"',
       'Access-Control-Allow-Origin': '*',
     },
   });

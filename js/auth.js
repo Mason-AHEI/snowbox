@@ -182,7 +182,7 @@ async function login() {
     var data = await response.json();
 
     if (data.success) {
-      setCurrentUser(data.user);
+      setCurrentUser(data.data);
       window.location.href = 'dashboard.html';
     } else {
       if (loginError) {

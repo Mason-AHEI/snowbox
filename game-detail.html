@@ -181,10 +181,6 @@
             </p>
           </div>
           <div class="game-actions">
-            <button class="game-btn game-btn-primary" id="download-btn">
-              <i class="fas fa-download"></i>
-              下载
-            </button>
           </div>
         </div>
 
@@ -215,7 +211,7 @@
     </div>
   </div>
 
-  <script src="js/auth.js"></script>
+  <script src="js/auth.js?v=5"></script>
   <script>
     let currentGame = null;
 
@@ -306,8 +302,6 @@
       document.getElementById('btn-back').addEventListener('click', () => {
         window.location.href = 'dashboard.html';
       });
-
-      document.getElementById('download-btn').addEventListener('click', downloadGame);
 
       loadGameDetail();
     });
