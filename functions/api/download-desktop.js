@@ -12,7 +12,7 @@ export async function onRequestGet(context) {
       return jsonResponse({ success: false, message: '安装包未上传' }, 404);
     }
 
-    const { totalSize, totalChunks, stream } = await streamFileFromChunks(env, DESKTOP_FILE_ID, 'desktop_app', 8);
+    const { totalSize, totalChunks, stream } = await streamFileFromChunks(env, DESKTOP_FILE_ID, 'desktop_app', 20);
     if (!stream) {
       return jsonResponse({ success: false, message: '安装包文件不存在' }, 404);
     }

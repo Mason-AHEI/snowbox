@@ -160,13 +160,20 @@ export async function readFileFromChunks(env, fileId, fileType) {
 /**
  * 流式读取分块文件，通过 ReadableStream 按需按批从 D1 读取
  * 避免一次性拼接 200MB+ 大数组导致 Pages Functions CPU 超时 (Error 1102)
+ *
+ * 性能要点：
+ *   1. 用 chunk_index 范围查询替代 LIMIT OFFSET，避免大 OFFSET 扫描开销
+ *   2. 一次 pull 输出一整批（默认 20 块 ≈ 5MB），pull 次数从 N 降到 N/batchSize
+ *   3. D1 查询是 I/O，本身就会让出事件循环，不需要每次 pull 都 setTimeout
+ *   4. 只在累计处理一定数据量后才 setTimeout 让出一次 CPU 时间片
+ *
  * @param env Workers/Pages env（含 DB）
  * @param fileId 文件标识
  * @param fileType 文件类型
- * @param chunkBatchSize 每次从 D1 取多少个分块（默认 10，约 2.5MB @256KB 每块）
+ * @param chunkBatchSize 每次从 D1 取多少个分块（默认 20，约 5MB @256KB 每块）
  * @returns {{ totalSize: number, totalChunks: number, stream: ReadableStream }}
  */
-export async function streamFileFromChunks(env, fileId, fileType, chunkBatchSize = 10) {
+export async function streamFileFromChunks(env, fileId, fileType, chunkBatchSize = 20) {
   const countRow = await queryOne(env,
     'SELECT COUNT(*) as cnt, IFNULL(SUM(chunk_size),0) as total FROM file_chunks WHERE file_id = ? AND file_type = ?',
     [fileId, fileType]
@@ -183,36 +190,40 @@ export async function streamFileFromChunks(env, fileId, fileType, chunkBatchSize
     return new Uint8Array(cd);
   };
 
-  // 状态放在 stream 外部，避免每次 pull 重建
-  let cursor = 0;                 // 下一个要从 D1 读取的分块下标
-  let pendingQueue = [];          // 已经从 D1 读出但尚未 enqueue 的分块队列
-  let done = false;
+  let cursor = 0;              // 下一个要从 D1 读取的分块下标
+  let bytesSinceYield = 0;     // 自上次让出 CPU 以来累计输出的字节数
 
   const stream = new ReadableStream({
     async pull(controller) {
-      // 让出时间片，避免长时间占 CPU 触发 1102
-      await new Promise(r => setTimeout(r, 0));
-
-      // 队列为空且还有未读分块时，拉取下一批
-      while (pendingQueue.length === 0 && !done && cursor < totalChunks) {
-        const limit = Math.min(chunkBatchSize, totalChunks - cursor);
-        const batch = await queryAll(env,
-          'SELECT chunk_data FROM file_chunks WHERE file_id = ? AND file_type = ? ORDER BY chunk_index ASC LIMIT ? OFFSET ?',
-          [fileId, fileType, limit, cursor]
-        );
-        if (!batch || batch.length === 0) {
-          done = true;
-          break;
-        }
-        pendingQueue = batch.map(row => makeChunkReadable(row.chunk_data));
-        cursor += batch.length;
-        if (cursor >= totalChunks) done = true;
+      if (cursor >= totalChunks) {
+        controller.close();
+        return;
       }
 
-      if (pendingQueue.length > 0) {
-        controller.enqueue(pendingQueue.shift());
-      } else {
+      const limit = Math.min(chunkBatchSize, totalChunks - cursor);
+      const end = cursor + limit;
+
+      const batch = await queryAll(env,
+        'SELECT chunk_data FROM file_chunks WHERE file_id = ? AND file_type = ? AND chunk_index >= ? AND chunk_index < ? ORDER BY chunk_index ASC',
+        [fileId, fileType, cursor, end]
+      );
+
+      if (!batch || batch.length === 0) {
         controller.close();
+        return;
+      }
+
+      for (const row of batch) {
+        controller.enqueue(makeChunkReadable(row.chunk_data));
+      }
+
+      cursor += batch.length;
+      bytesSinceYield += limit * 256 * 1024; // 估算
+
+      // 每输出 ~25MB 让出一次 CPU 时间片，避免触发 1102
+      if (bytesSinceYield >= 25 * 1024 * 1024) {
+        await new Promise(r => setTimeout(r, 0));
+        bytesSinceYield = 0;
       }
     },
   });
