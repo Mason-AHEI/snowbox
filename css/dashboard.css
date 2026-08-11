@@ -493,6 +493,140 @@ body {
   padding: 10px 14px;
 }
 
+/* ===== 游戏页顶部长条公告横幅 ===== */
+.games-announcement-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 20px;
+  padding: 14px 44px 14px 14px;
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 40%, #EC4899 100%);
+  border-radius: 14px;
+  color: white;
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.35);
+  overflow: hidden;
+}
+
+.games-announcement-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 20px,
+    transparent 20px,
+    transparent 40px
+  );
+  pointer-events: none;
+}
+
+.games-announcement-banner .banner-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: white;
+  margin-right: 6px;
+}
+
+.games-announcement-banner .banner-content-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.games-announcement-banner .banner-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.games-announcement-banner .banner-title {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.games-announcement-banner .banner-sep {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.games-announcement-banner .banner-content {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.96;
+}
+
+.games-announcement-banner .banner-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s ease;
+  z-index: 2;
+}
+
+.games-announcement-banner .banner-nav:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.games-announcement-banner .banner-nav-prev { left: 6px; }
+.games-announcement-banner .banner-nav-next { right: 38px; }
+
+.games-announcement-banner .banner-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  font-size: 12px;
+  transition: background 0.15s ease;
+  z-index: 2;
+}
+
+.games-announcement-banner .banner-close:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 .announcements-section {
   background-color: rgba(245, 158, 11, 0.05);
   border: 1px solid rgba(245, 158, 11, 0.2);

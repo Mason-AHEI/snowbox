@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化加载游戏列表
     loadGames();
+    // 加载游戏页顶部公告横幅
+    loadGamesBannerAnnouncements();
   } catch (e) {
     console.error('DOMContentLoaded 初始化出错:', e);
     showToast('页面初始化异常，请刷新页面重试', 'error');
@@ -2548,6 +2550,103 @@ function deleteAnnouncement(announcementId) {
     .catch(function(error) {
       console.error('删除公告失败:', error);
       alert('删除公告失败: ' + (error.message || '网络错误'));
+    });
+}
+
+// ====== 10. 游戏页公告横幅 ======
+
+/**
+ * 游戏页面顶部的长条公告横幅
+ * 取最新最多 5 条公告，可左右切换 / 自动轮播 / 点击关闭
+ */
+function loadGamesBannerAnnouncements() {
+  var banner = document.getElementById('games-announcement-banner');
+  if (!banner) return;
+
+  // 用户手动关闭过的话，本次会话不再显示
+  if (window.__bannerDismissed) return;
+
+  fetch(getApiBase() + '/api/announcements')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!data || !data.success || !data.data || data.data.length === 0) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      var list = data.data.slice(0, 5); // 最多取最新 5 条
+      var idx = 0;
+      var timer = null;
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = String(str == null ? '' : str);
+        return div.innerHTML;
+      }
+
+      function render(i) {
+        var item = list[i];
+        if (!item) return;
+        var titleEl = document.getElementById('banner-title');
+        var contentEl = document.getElementById('banner-content');
+        if (titleEl) titleEl.textContent = item.title || '公告';
+        if (contentEl) contentEl.textContent = (item.content || '').replace(/\s+/g, ' ');
+      }
+
+      function startAutoplay() {
+        stopAutoplay();
+        if (list.length <= 1) return;
+        timer = setInterval(function() {
+          idx = (idx + 1) % list.length;
+          render(idx);
+        }, 8000);
+      }
+
+      function stopAutoplay() {
+        if (timer) { clearInterval(timer); timer = null; }
+      }
+
+      // 左右翻页按钮（仅多条时显示）
+      var prevBtn = document.getElementById('banner-prev-btn');
+      var nextBtn = document.getElementById('banner-next-btn');
+      if (list.length > 1) {
+        if (prevBtn) prevBtn.style.display = '';
+        if (nextBtn) nextBtn.style.display = '';
+      } else {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+      }
+
+      if (prevBtn) prevBtn.onclick = function() {
+        stopAutoplay();
+        idx = (idx - 1 + list.length) % list.length;
+        render(idx);
+        startAutoplay();
+      };
+      if (nextBtn) nextBtn.onclick = function() {
+        stopAutoplay();
+        idx = (idx + 1) % list.length;
+        render(idx);
+        startAutoplay();
+      };
+
+      // 关闭按钮
+      var closeBtn = document.getElementById('banner-close-btn');
+      if (closeBtn) {
+        closeBtn.onclick = function() {
+          banner.style.display = 'none';
+          window.__bannerDismissed = true;
+          stopAutoplay();
+        };
+      }
+
+      render(0);
+      banner.style.display = '';
+      startAutoplay();
+    })
+    .catch(function(err) {
+      console.warn('加载游戏页公告横幅失败:', err);
+      banner.style.display = 'none';
     });
 }
 
