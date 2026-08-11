@@ -458,6 +458,13 @@
           <p>Snow Box 桌面客户端，让您的游戏管理更便捷</p>
         </header>
         <div class="download-desktop-content">
+          <div class="download-speed-notice">
+            <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
+            <div class="notice-body">
+              <h4>下载速度提示</h4>
+              <p>由于本站优化和技术原因，上传或下载大文件时速度可能较慢。<strong>推荐使用下方「高速直链下载」</strong>（跳转 Zoho WorkDrive 第三方平台直链），可显著提升下载速度。本站 D1 直存方式作为备用选项。</p>
+            </div>
+          </div>
           <div class="download-card">
             <div class="download-icon">
               <i class="fas fa-desktop"></i>
@@ -467,9 +474,15 @@
               <p class="download-version">版本 v1.0.0</p>
               <p class="download-desc">Windows 桌面客户端 · 免安装绿色版</p>
             </div>
-            <button class="btn btn-primary" id="download-desktop-btn">
+            <a class="btn btn-primary btn-direct" id="download-desktop-direct-btn"
+               href="https://workdrive.zohopublic.com.cn/external/78e4e3fcca9a72f2cb5707fd035adb7662cea61eb6e70a7ddde2a3f4d8a5c27c6/download"
+               target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-bolt"></i>
+              <span>高速直链下载（推荐）</span>
+            </a>
+            <button class="btn btn-secondary" id="download-desktop-btn">
               <i class="fas fa-download"></i>
-              <span>立即下载</span>
+              <span>本站备用下载</span>
             </button>
             <p class="download-tip" id="download-tip" style="display: none;"></p>
           </div>
