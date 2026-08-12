@@ -142,6 +142,71 @@
       color: #fbbf24;
       margin-right: 8px;
     }
+    .speed-notice {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(249, 115, 22, 0.2));
+      border: 1px solid rgba(251, 191, 36, 0.6);
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 0 0 22px;
+      font-size: 14px;
+      line-height: 1.7;
+      text-align: left;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .speed-notice i {
+      color: #fbbf24;
+      margin-top: 2px;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .speed-notice strong {
+      color: #fde68a;
+    }
+    .direct-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #F59E0B, #EF4444);
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 18px 40px;
+      border-radius: 50px;
+      text-decoration: none;
+      margin: 20px 8px 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 8px 22px rgba(245, 158, 11, 0.45);
+    }
+    .direct-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(245, 158, 11, 0.55);
+    }
+    .fallback-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: transparent;
+      color: white;
+      border: 2px solid rgba(255,255,255,0.5);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 13px 30px;
+      border-radius: 50px;
+      text-decoration: none;
+      margin: 8px;
+      transition: all 0.2s;
+    }
+    .fallback-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: white;
+    }
+    .btn-order {
+      margin: 6px 0 14px;
+      font-size: 13px;
+      opacity: 0.85;
+    }
     .back-link {
       color: white;
       text-decoration: none;
@@ -204,6 +269,13 @@
           <i class="fas fa-calendar"></i> 2024年
         </div>
 
+        <div class="speed-notice">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            <strong>下载速度提示：</strong>由于本站优化和技术原因，上传或下载大文件时速度可能较慢。推荐使用下方「高速直链下载」（跳转 Zoho WorkDrive 第三方平台直链），可显著提升下载速度。本站 D1 直存方式作为备用选项。
+          </div>
+        </div>
+
         <div class="download-notice">
           <i class="fas fa-info-circle"></i>
           <strong>温馨提示：</strong>安装包较大（约 255 MB），请在网络环境良好时下载。下载前请确认你的系统符合最低要求。
@@ -221,11 +293,18 @@
           </div>
         </div>
 
-        <a href="/api/download-desktop" class="download-btn-large">
-          <i class="fas fa-download"></i>
-          立即下载 SnowBox-Setup.exe
+        <a href="https://workdrive.zohopublic.com.cn/external/78e4e3fcca9a72f2cb5707fd035adb7662cea61eb6e70a7ddde2a3f4d8a5c27c6/download"
+           target="_blank" rel="noopener noreferrer" class="direct-btn">
+          <i class="fas fa-bolt"></i>
+          高速直链下载（推荐）
         </a>
-        
+        <div></div>
+        <a href="/api/download-desktop" class="fallback-btn">
+          <i class="fas fa-download"></i>
+          本站备用下载
+        </a>
+        <div class="btn-order">⇧ 优先推荐直链，速度更快，备用下载为本站 D1 直存通道</div>
+
         <div style="margin: 20px 0;">
           <a href="index.html" class="btn-secondary-outline">
             <i class="fas fa-arrow-left"></i> 返回首页
